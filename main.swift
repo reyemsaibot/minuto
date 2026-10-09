@@ -187,10 +187,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
             let args = CommandLine.arguments
             let directory: URL
             if let i = args.firstIndex(of: "--data-dir"), args.count > i + 1 { directory = URL(fileURLWithPath: args[i+1]) }
-            else { directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("Kundenzeit") }
+            else {
+                let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+                let minuto = support.appendingPathComponent("Minuto")
+                let legacy = support.appendingPathComponent("Kundenzeit")
+                if !FileManager.default.fileExists(atPath: minuto.path), FileManager.default.fileExists(atPath: legacy.path) {
+                    try FileManager.default.copyItem(at: legacy, to: minuto)
+                }
+                directory = minuto
+            }
             store = try EntryStore(directory: directory, seed: resources.appendingPathComponent("initial-entries.json"))
             let config = WKWebViewConfiguration()
-            config.userContentController.add(self, name: "kundenzeit")
+            config.userContentController.add(self, name: "minuto")
             config.websiteDataStore = .nonPersistent()
             webView = WKWebView(frame: .zero, configuration: config)
             webView.navigationDelegate = self
@@ -271,7 +279,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
 
 func check(_ condition: Bool) { precondition(condition) }
 func selfTest() throws {
-    let dir = FileManager.default.temporaryDirectory.appendingPathComponent("Kundenzeit-Test-" + UUID().uuidString)
+    let dir = FileManager.default.temporaryDirectory.appendingPathComponent("Minuto-Test-" + UUID().uuidString)
     defer { try? FileManager.default.removeItem(at: dir) }
     var store: EntryStore? = try EntryStore(directory: dir, seed: nil)
     let base: [String: Any] = ["id":"test", "action":"add", "customer":"Test", "project":"Projekt", "ticket":"T-1", "date":"2026-09-29", "seconds":3600]

@@ -88,7 +88,7 @@ Tastaturkürzel:
 Minuto speichert alle persönlichen Daten lokal unter:
 
 ```text
-~/Library/Application Support/Kundenzeit/
+~/Library/Application Support/Minuto/
 ```
 
 Wichtige Dateien:

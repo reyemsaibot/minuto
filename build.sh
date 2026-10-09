@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 cd "$(dirname "$0")"
-npm install
+npm ci
 npm run build
 APP="$PWD/build/Minuto.app"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources/web"
