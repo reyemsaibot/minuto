@@ -5,7 +5,7 @@ npm install
 npm run build
 APP="$PWD/build/Minuto.app"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources/web"
-swiftc -module-cache-path build/swift-cache main.swift -o "$APP/Contents/MacOS/Kundenzeit" -framework Cocoa -framework WebKit
+swiftc -module-cache-path build/swift-cache main.swift -o "$APP/Contents/MacOS/Minuto" -framework Cocoa -framework WebKit
 cp Info.plist "$APP/Contents/Info.plist"
 cp Minuto.icns "$APP/Contents/Resources/Minuto.icns"
 cp web/app.js web/style.css index.html "$APP/Contents/Resources/web/"
