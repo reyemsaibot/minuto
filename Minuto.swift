@@ -148,7 +148,7 @@ struct RootView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Picker("Bereich", selection: $selection) { Text("Zeiten").tag(0); Text("Übersicht").tag(1) }.pickerStyle(.segmented).frame(width: 240)
+                Picker("Bereich", selection: $selection) { Text("Zeiten").tag(0); Text("Übersicht").tag(1); Text("Stammdaten").tag(2) }.pickerStyle(.segmented).frame(width: 360)
                 Spacer()
                 Menu("Daten") {
                     Button("Sicherung exportieren") { store.export() }
@@ -159,14 +159,28 @@ struct RootView: View {
                 }
             }.padding()
             Divider()
-            if selection == 0 { TimeWorkspace() } else { OverviewView() }
+            if selection == 0 { TimeWorkspace() }
+            else if selection == 1 { OverviewView() }
+            else { MasterDataWorkspace() }
         }.alert("Minuto", isPresented: .constant(store.error != nil), actions: { Button("OK") { store.error = nil } }, message: { Text(store.error ?? "") })
     }
 }
 
 struct TimeWorkspace: View {
     @EnvironmentObject private var store: MinutoStore
-    var body: some View { ScrollView { VStack(alignment: .leading, spacing: 18) { TimeEntryForm(); MasterDataView(); EntryList() }.padding(24) } }
+    var body: some View { ScrollView { VStack(alignment: .leading, spacing: 18) { TimeEntryForm(); EntryList() }.padding(24) } }
+}
+
+struct MasterDataWorkspace: View {
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Stammdaten").font(.largeTitle.bold())
+                Text("Kunden, Projekte und Abrechnungstickets für die schnelle Zeiterfassung verwalten.").foregroundStyle(.secondary)
+                MasterDataView()
+            }.padding(24)
+        }
+    }
 }
 
 struct TimeEntryForm: View {
@@ -219,8 +233,10 @@ struct MasterDataView: View {
     @State private var customer = ""
     @State private var project = ""
     @State private var billingTicket = ""
-    var body: some View { DisclosureGroup("Stammdaten verwalten") { VStack(alignment: .leading) { HStack { TextField("Kunde", text: $customer); TextField("Projekt", text: $project); TextField("Abrechnungsticket", text: $billingTicket); Button("Hinzufügen") { guard !customer.isEmpty, !project.isEmpty, !billingTicket.isEmpty else { return }; store.masters.append(MasterData(id: UUID(), customer: customer, project: project, billingTicket: billingTicket)); store.saveMasters(); customer = ""; project = ""; billingTicket = "" } }
-        ForEach(store.masters) { master in HStack { Text(master.customer).frame(width: 160, alignment: .leading); Text(master.project).frame(width: 160, alignment: .leading); Text(master.billingTicket); Spacer(); Button(master.favorite ? "★" : "☆") { toggleFavorite(master) }; Button(master.active ? "Archivieren" : "Aktivieren") { toggleActive(master) }; Button(role: .destructive) { store.masters.removeAll { $0.id == master.id }; store.saveMasters() } label: { Image(systemName: "trash") } } } }.padding(.top, 8) }
+    var body: some View { GroupBox("Kunde · Projekt · Abrechnungsticket") { VStack(alignment: .leading, spacing: 12) { HStack { TextField("Kunde", text: $customer); TextField("Projekt", text: $project); TextField("Abrechnungsticket", text: $billingTicket); Button("Hinzufügen") { guard !customer.isEmpty, !project.isEmpty, !billingTicket.isEmpty else { return }; store.masters.append(MasterData(id: UUID(), customer: customer, project: project, billingTicket: billingTicket)); store.saveMasters(); customer = ""; project = ""; billingTicket = "" }.buttonStyle(.borderedProminent) }
+        Divider()
+        if store.masters.isEmpty { Text("Noch keine Stammdaten hinterlegt.").foregroundStyle(.secondary).padding(.vertical, 10) }
+        ForEach(store.masters) { master in HStack { Text(master.customer).frame(width: 180, alignment: .leading); Text(master.project).frame(width: 180, alignment: .leading); Text(master.billingTicket); Spacer(); Button(master.favorite ? "★" : "☆") { toggleFavorite(master) }.help("Favorit"); Button(master.active ? "Archivieren" : "Aktivieren") { toggleActive(master) }; Button(role: .destructive) { store.masters.removeAll { $0.id == master.id }; store.saveMasters() } label: { Image(systemName: "trash") }.help("Löschen") } } }.padding(6) }
     }
     private func toggleFavorite(_ master: MasterData) { guard let i = store.masters.firstIndex(of: master) else { return }; store.masters[i].favorite.toggle(); store.saveMasters() }
     private func toggleActive(_ master: MasterData) { guard let i = store.masters.firstIndex(of: master) else { return }; store.masters[i].active.toggle(); store.saveMasters() }
