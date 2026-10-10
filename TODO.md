@@ -4,7 +4,7 @@ Diese Liste enthält technische und produktbezogene Verbesserungen für die loka
 
 ## Priorität hoch
 
-- [ ] `src/App.tsx` in kleinere Komponenten aufteilen: Erfassung, Stammdaten, Eintragsliste, Übersicht und Kalender.
+- [ ] `Minuto.swift` in kleinere Swift-Dateien für Datenmodell, Speicherung, Erfassung, Liste und Übersicht aufteilen.
 - [ ] Automatisierte Tests für Stammdaten, CSV-Export, Import und Wiederherstellung ergänzen.
 - [ ] Test für die einmalige Datenmigration von `Kundenzeit` nach `Minuto` ergänzen.
 - [ ] GitHub Actions einrichten: Build und Selbsttest bei jedem Push ausführen.
@@ -14,8 +14,8 @@ Diese Liste enthält technische und produktbezogene Verbesserungen für die loka
 
 - [ ] Importvorschau mit Anzahl neuer, aktualisierter und kollidierender Einträge erstellen.
 - [ ] Stammdaten gemeinsam mit Zeiteinträgen sichern, importieren und wiederherstellen.
-- [ ] CSS nach Bereichen strukturieren: Basis, Layout, Formulare, Tabellen, Übersicht und Responsive-Regeln.
-- [ ] Ungenutzten Ticket-Vorschlagscode entfernen.
+- [ ] Editierdialog für bereits gespeicherte Zeiteinträge ergänzen.
+- [ ] Importvorschau vor dem endgültigen Übernehmen ergänzen.
 - [ ] README um Screenshots und Hinweise für Updates ergänzen.
 
 ## Später

@@ -9,13 +9,13 @@ Minuto ist eine lokale macOS-App zur persönlichen Zeiterfassung. Zeiten werden 
 - Kunden, Projekte, Jira-Tickets und Abrechnungstickets
 - Stammdaten für `Kunde → Projekt → Abrechnungsticket`
 - Favoriten und archivierte Projekte
-- Einträge bearbeiten, duplizieren, abschließen und löschen
+- Einträge duplizieren, abschließen, wieder öffnen und löschen
 - Filter für Kunde, Jira-Ticket, Notiz und Zeitraum
 - CSV-Export der aktuell gefilterten Einträge
 - JSON-Datensicherung, Import und Wiederherstellung
 - Tages- und Wochenübersicht mit konfigurierbarer Sollzeit
 - Kalender, Kennzahlen und Wochenabschluss
-- Lokale Erinnerung für Arbeitstage ohne Zeiterfassung
+- Native SwiftUI-Oberfläche ohne Web- oder JavaScript-Runtime
 
 ## Installation
 
@@ -31,7 +31,7 @@ Minuto ist lokal signiert, wird aber nicht über den Mac App Store verteilt.
 
 ### Timer
 
-1. Kunde, Projekt und Jira-Ticket eingeben oder aus den Vorschlägen wählen.
+1. Kunde, Projekt und Jira-Ticket eingeben oder eine Stammdatenzuordnung übernehmen.
 2. Optional eine Notiz ergänzen.
 3. **Timer starten** wählen.
 4. Zum Ende der Arbeit **Stoppen & speichern** wählen.
@@ -49,7 +49,7 @@ Der Timer läuft auch bei geschlossenem Fenster weiter. Während er läuft, lass
 
 Unter **Stammdaten verwalten** werden Zuordnungen aus Kunde, Projekt und Abrechnungsticket hinterlegt.
 
-- Aktive Kunden und Projekte werden bei der Erfassung vorgeschlagen.
+- Aktive Kunden und Projekte stehen bei der Erfassung zur Übernahme bereit.
 - Ein Stern markiert häufig verwendete Zuordnungen als Favorit.
 - Das Status-Symbol archiviert Projekte; archivierte Projekte können wieder aktiviert werden.
 - Beim Abschließen wird ein passendes Abrechnungsticket automatisch übernommen.
@@ -68,7 +68,6 @@ Die Listenansichten sind:
 Aktionen für offene Einträge:
 
 - `⧉` als Vorlage duplizieren
-- Stift: bearbeiten
 - Haken: abschließen
 - Papierkorb: löschen
 
@@ -97,14 +96,12 @@ Wichtige Dateien:
 - `stammdaten.json` – Stammdaten
 - `Sicherungen/` – automatische Sicherungen vor Änderungen
 
-Über die Fußzeile stehen diese Funktionen bereit:
+Über das Menü **Daten** stehen diese Funktionen bereit:
 
 - **Datensicherung** exportiert den aktuellen Zeitbestand als JSON-Datei.
 - **Importieren** führt JSON-Zeiteinträge mit dem vorhandenen Bestand zusammen.
-- **Wiederherstellen** ersetzt den Zeitbestand nach Bestätigung durch eine JSON-Sicherung.
+- **Wiederherstellen** ersetzt den Zeitbestand durch eine JSON-Sicherung.
 - **Datenordner** öffnet den lokalen Speicherort im Finder.
-
-Vor Import und Wiederherstellung wird automatisch eine Sicherung angelegt.
 
 ## Entwicklung
 
@@ -112,7 +109,6 @@ Vor Import und Wiederherstellung wird automatisch eine Sicherung angelegt.
 
 - macOS 13 oder neuer
 - Xcode Command Line Tools
-- Node.js
 
 ### Build
 
@@ -120,23 +116,14 @@ Vor Import und Wiederherstellung wird automatisch eine Sicherung angelegt.
 ./build.sh
 ```
 
-Das Build-Skript installiert Abhängigkeiten, baut die Weboberfläche, kompiliert den nativen Swift-Host, führt einen Selbsttest aus und erstellt `build/Minuto.app`.
-
-### Selbsttest
-
-```bash
-build/Minuto.app/Contents/MacOS/Minuto --self-test
-```
-
-Der Selbsttest nutzt einen eigenen temporären Ordner und verändert keine persönlichen Daten.
+Das Build-Skript kompiliert die native SwiftUI-App, bindet das App-Icon ein und erstellt `build/Minuto.app`. Es werden weder Node.js noch ein Browser-Container benötigt.
 
 ## Projektstruktur
 
 ```text
-src/             React-Oberfläche
-components/      UI-Komponenten
-main.swift       Datenhaltung und macOS-WebKit-Host
-assets/          Icon-Quellen
+Minuto.swift     SwiftUI-Oberfläche, Datenmodell und lokale Speicherung
+Minuto.icns      App-Icon für Finder und Dock
+Info.plist       macOS-App-Metadaten
 build.sh         lokaler macOS-Build
 ```
 
