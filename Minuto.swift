@@ -218,7 +218,18 @@ struct EntryList: View {
     @State private var note = ""
     @State private var from = Calendar.current.date(byAdding: .month, value: -1, to: Date())!
     @State private var to = Date()
-    var rows: [TimeEntry] { store.entries.filter { e in (status == 2 || (status == 0 ? !e.billed : e.billed)) && (customer.isEmpty || e.customer.localizedCaseInsensitiveContains(customer)) && (ticket.isEmpty || e.ticket.localizedCaseInsensitiveContains(ticket)) && (note.isEmpty || (e.note ?? "").localizedCaseInsensitiveContains(note)) && e.date >= Calendar.current.startOfDay(for: from) && e.date <= Calendar.current.date(byAdding: .day, value: 1, to: to)! } }
+    var rows: [TimeEntry] {
+        let calendar = Calendar.current
+        let firstDay = calendar.startOfDay(for: min(from, to))
+        let dayAfterLast = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: max(from, to)))!
+        return store.entries.filter { entry in
+            (status == 2 || (status == 0 ? !entry.billed : entry.billed)) &&
+            (customer.isEmpty || entry.customer.localizedCaseInsensitiveContains(customer)) &&
+            (ticket.isEmpty || entry.ticket.localizedCaseInsensitiveContains(ticket)) &&
+            (note.isEmpty || (entry.note ?? "").localizedCaseInsensitiveContains(note)) &&
+            entry.date >= firstDay && entry.date < dayAfterLast
+        }
+    }
     var body: some View { GroupBox("Zeiteinträge") { VStack(alignment: .leading) {
         HStack { TextField("Kunde filtern", text: $customer); TextField("Jira-Ticket", text: $ticket); TextField("Notiz", text: $note); DatePicker("Von", selection: $from, displayedComponents: .date); DatePicker("Bis", selection: $to, displayedComponents: .date) }
         Picker("Status", selection: $status) { Text("Offen").tag(0); Text("Archiv").tag(1); Text("Alle").tag(2) }.pickerStyle(.segmented).frame(width: 280)
