@@ -7,9 +7,20 @@ APP="$PWD/build/Minuto.app"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 
+SOURCE_FILES=(
+  Sources/Models.swift
+  Sources/MinutoStore.swift
+  Sources/MinutoApp.swift
+  Sources/Support/Presentation.swift
+  Sources/Views/AppShell.swift
+  Sources/Views/TimeEntryViews.swift
+  Sources/Views/MasterDataViews.swift
+  Sources/Views/OverviewViews.swift
+)
+
 swiftc -parse-as-library \
   -module-cache-path build/swift-cache \
-  Minuto.swift \
+  "${SOURCE_FILES[@]}" \
   -o "$APP/Contents/MacOS/Minuto" \
   -framework SwiftUI \
   -framework AppKit

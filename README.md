@@ -121,7 +121,10 @@ Das Build-Skript kompiliert die native SwiftUI-App, bindet das App-Icon ein und 
 ## Projektstruktur
 
 ```text
-Minuto.swift     SwiftUI-Oberfläche, Datenmodell und lokale Speicherung
+Sources/Models.swift             Datenmodelle und Legacy-Migrationsmodelle
+Sources/MinutoStore.swift        lokale Speicherung, Migration, Import und Export
+Sources/Views/                   SwiftUI-Ansichten für Erfassung, Liste und Übersicht
+Sources/Support/Presentation.swift  gemeinsame Darstellung und Formatierung
 Minuto.icns      App-Icon für Finder und Dock
 Info.plist       macOS-App-Metadaten
 build.sh         lokaler macOS-Build

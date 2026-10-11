@@ -7,7 +7,7 @@ Stand: 11.10.2026
 | Produkt | **Minuto** ist eine persönliche, lokale Zeiterfassung für macOS. Sie richtet Zeiten Kunden, Projekten und Jira-Tickets zu. |
 | Hauptablauf | App öffnen → Timer starten oder Zeit manuell erfassen → Einträge kontrollieren, abschließen oder als CSV exportieren. |
 | Umfang | Timer, manuelle Erfassung, Stammdaten, Filter, CSV, Sicherung, Import, Kalender und Übersicht. |
-| Später | Bearbeitungsdialog, automatisierte Tests, schema-versionierte Sicherungen, Release-Signierung und Notarisierung. |
+| Später | Automatisierte Tests, schema-versionierte Sicherungen, Release-Signierung und Notarisierung. |
 | Technik | SwiftUI und AppKit, macOS 13+, Apple Silicon Build, keine Laufzeitabhängigkeiten. |
 | Identität | Bundle-ID `local.tobiasmeyer.minuto`, ausführbare Datei `Minuto`, Build unter `build/Minuto.app`. |
 | Daten | `~/Library/Application Support/Minuto/`; JSON für Einträge und Stammdaten. Bestehende Daten aus `Kundenzeit` werden einmalig übernommen. |
