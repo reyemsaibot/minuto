@@ -12,11 +12,17 @@ SOURCE_FILES=(
   Sources/MinutoDomain.swift
   Sources/MinutoPersistence.swift
   Sources/MinutoStore.swift
+  Sources/Store/MinutoStore+Entries.swift
+  Sources/Store/MinutoStore+MasterData.swift
+  Sources/Store/MinutoStore+DataTransfer.swift
+  Sources/Store/MinutoStore+Overview.swift
   Sources/MinutoApp.swift
   Sources/Support/Presentation.swift
   Sources/Views/AppShell.swift
   Sources/Views/HelpView.swift
-  Sources/Views/TimeEntryViews.swift
+  Sources/Views/Time/TimeEntryForm.swift
+  Sources/Views/Time/EntryListView.swift
+  Sources/Views/Time/TimeEntryEditor.swift
   Sources/Views/MasterDataViews.swift
   Sources/Views/OverviewViews.swift
 )

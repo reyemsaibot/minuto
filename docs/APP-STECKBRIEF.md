@@ -8,7 +8,7 @@ Stand: 11.10.2026
 | Hauptablauf | App öffnen → Timer starten oder Zeit manuell erfassen → Einträge kontrollieren, abschließen oder als CSV exportieren. |
 | Umfang | Timer, manuelle Erfassung, eindeutige Stammdaten, Filter, CSV, vollständige Sicherung/Wiederherstellung, Kalender, Kennzahlen und persistenter Wochenabschluss. |
 | Spätere Etappen | Importvorschau, Stammdaten-Bearbeitung, Entscheidung über Timer an Mitternacht, Release-Signierung und Notarisierung. |
-| Technik | SwiftUI und AppKit, macOS 13+, Apple-Silicon-Build, keine Laufzeitabhängigkeiten. |
+| Technik | SwiftUI und AppKit, macOS 13+, Apple-Silicon-Build, keine Laufzeitabhängigkeiten. Datenmodell, Fachregeln, Persistenz, Store-Bereiche und Ansichten sind getrennt. |
 | Identität | Bundle-ID `local.tobiasmeyer.minuto`, ausführbare Datei `Minuto`, Build unter `build/Minuto.app`. |
 | Daten | `~/Library/Application Support/Minuto/minuto.json`, Schema 1; vollständiger Export/Import als JSON; automatische Sicherungen unter `Sicherungen/`; Migration aus `Kundenzeit` und früheren Einzeldateien. |
 | Bedienung | Deutsche Oberfläche; Startansicht **Zeiten**; Bereiche Zeiten, Übersicht und Stammdaten über Kopfzeile oder `⌘1–3`; manuelle Erfassung mit `⌘N`; Timerstart mit Leertaste. |

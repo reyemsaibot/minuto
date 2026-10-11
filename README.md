@@ -118,8 +118,10 @@ Importdateien werden vor der Übernahme vollständig gelesen und validiert. Vor 
 Sources/Models.swift                Datenmodelle und Sicherungsformat
 Sources/MinutoDomain.swift          fachliche Datums- und Timerregeln
 Sources/MinutoPersistence.swift     lokale Speicherung, Migration und Sicherungen
-Sources/MinutoStore.swift           UI-Status und Hintergrundoperationen
-Sources/Views/                      SwiftUI-Ansichten
+Sources/MinutoStore.swift           gemeinsamer UI-Status und Persistenzkoordination
+Sources/Store/                      getrennte Store-Bereiche für Einträge, Stammdaten, Transfer und Übersicht
+Sources/Views/Time/                 Erfassung, Liste/Filter und Bearbeitungsdialog
+Sources/Views/                      übrige SwiftUI-Ansichten
 Tests/                              ausführbare Persistenztests
 .github/workflows/verify.yml        CI-Prüfung
 Minuto.icns                         App-Icon für Finder und Dock
