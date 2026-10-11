@@ -34,7 +34,6 @@ struct TimeEntryForm: View {
                     .foregroundStyle(.orange)
                     .accessibilityLabel("Fehlende Pflichtfelder: \(missingFields.joined(separator: ", "))")
             }
-            MasterDataPicker { master in customer = master.customer; project = master.project }
         }.padding(4) } label: { Text("Zeiten erfassen").font(.headline) }
         .task(id: showManualEntry) { consumeManualEntryRequest() }
     }
@@ -69,43 +68,6 @@ struct TimeEntryForm: View {
     }
     private func reset() { customer = ""; project = ""; ticket = ""; note = ""; minutes = 60; date = Date(); showValidation = false }
     private func consumeManualEntryRequest() { guard showManualEntry else { return }; manual = true; date = Date(); showManualEntry = false; DispatchQueue.main.async { focusedField = .customer } }
-}
-
-struct MasterDataPicker: View {
-    @EnvironmentObject private var store: MinutoStore
-    @State private var expanded = false
-    @State private var query = ""
-    let onSelect: (MasterData) -> Void
-
-    private var matches: [MasterData] {
-        store.activeMasters.filter { query.isEmpty || "\($0.customer) \($0.project) \($0.billingTicket)".localizedCaseInsensitiveContains(query) }
-    }
-
-    var body: some View {
-        if !store.activeMasters.isEmpty {
-            DisclosureGroup("Stammdaten auswählen", isExpanded: $expanded) {
-                TextField("Kunde oder Projekt suchen", text: $query)
-                    .textFieldStyle(.roundedBorder)
-                    .padding(.vertical, 4)
-                ForEach(matches.prefix(8)) { master in
-                    Button {
-                        onSelect(master)
-                        expanded = false
-                    } label: {
-                        HStack {
-                            if master.favorite { Image(systemName: "star.fill").foregroundStyle(.yellow) }
-                            Text(master.customer).fontWeight(.medium)
-                            Text("· \(master.project)").foregroundStyle(.secondary)
-                            Spacer()
-                            Text(master.billingTicket).foregroundStyle(.tertiary)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.vertical, 3)
-                }
-            }
-        }
-    }
 }
 
 struct EntryList: View {
@@ -263,7 +225,6 @@ struct TimeEntryEditor: View {
                 GridRow { DatePicker("Datum", selection: $date, displayedComponents: .date); EmptyView() }
             }
             TextField("Notiz", text: $note)
-            MasterDataPicker { master in customer = master.customer; project = master.project }
             HStack { Spacer(); Button("Abbrechen") { dismiss() }; Button("Speichern") { save() }.buttonStyle(.borderedProminent).keyboardShortcut(.defaultAction) }
         }
         .padding(24)
