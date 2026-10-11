@@ -139,7 +139,7 @@ extension JSONDecoder { static var minuto: JSONDecoder { let decoder = JSONDecod
 
 @main struct MinutoApp: App {
     @StateObject private var store = MinutoStore()
-    var body: some Scene { WindowGroup { RootView().environmentObject(store).frame(minWidth: 980, minHeight: 700) }.windowStyle(.titleBar) }
+    var body: some Scene { WindowGroup("Minuto") { RootView().environmentObject(store).frame(minWidth: 980, minHeight: 700) }.windowStyle(.titleBar) }
 }
 
 struct RootView: View {
@@ -148,7 +148,12 @@ struct RootView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Picker("Bereich", selection: $selection) { Text("Zeiten").tag(0); Text("Übersicht").tag(1); Text("Stammdaten").tag(2) }.pickerStyle(.segmented).frame(width: 360)
+                AppBrandView()
+                Spacer()
+                Picker("Bereich", selection: $selection) { Text("Zeiten").tag(0); Text("Übersicht").tag(1); Text("Stammdaten").tag(2) }
+                    .pickerStyle(.segmented)
+                    .frame(width: 360)
+                    .accessibilityIdentifier("main-navigation")
                 Spacer()
                 Menu("Daten") {
                     Button("Sicherung exportieren") { store.export() }
@@ -156,13 +161,30 @@ struct RootView: View {
                     Button("Einträge wiederherstellen") { store.importEntries(replace: true) }
                     Divider()
                     Button("Datenordner öffnen") { store.openFolder() }
-                }
-            }.padding()
+                }.accessibilityIdentifier("data-menu")
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 12)
+            .background(.bar)
             Divider()
             if selection == 0 { TimeWorkspace() }
             else if selection == 1 { OverviewView() }
             else { MasterDataWorkspace() }
         }.alert("Minuto", isPresented: .constant(store.error != nil), actions: { Button("OK") { store.error = nil } }, message: { Text(store.error ?? "") })
+    }
+}
+
+struct AppBrandView: View {
+    private let appIcon = Bundle.main.url(forResource: "Minuto", withExtension: "icns").flatMap(NSImage.init(contentsOf:))
+
+    var body: some View {
+        HStack(spacing: 9) {
+            if let appIcon { Image(nsImage: appIcon).resizable().interpolation(.high).frame(width: 28, height: 28).accessibilityHidden(true) }
+            else { Image(systemName: "timer").font(.title3).foregroundStyle(.tint).accessibilityHidden(true) }
+            Text("Minuto").font(.headline.weight(.semibold))
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Minuto")
     }
 }
 
