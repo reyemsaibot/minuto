@@ -67,6 +67,7 @@ Die Übersicht enthält Tages- und Wochenstunden, Sollzeit, Kennzahlen, einen Mo
 Tastaturkürzel:
 
 - `⌘N` – manuelle Erfassung öffnen
+- `Leertaste` – Timer starten
 - `⌘1` – Zeiten
 - `⌘2` – Übersicht
 - `⌘3` – Stammdaten

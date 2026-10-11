@@ -11,7 +11,7 @@ Stand: 11.10.2026
 | Technik | SwiftUI und AppKit, macOS 13+, Apple-Silicon-Build, keine Laufzeitabhängigkeiten. |
 | Identität | Bundle-ID `local.tobiasmeyer.minuto`, ausführbare Datei `Minuto`, Build unter `build/Minuto.app`. |
 | Daten | `~/Library/Application Support/Minuto/minuto.json`, Schema 1; vollständiger Export/Import als JSON; automatische Sicherungen unter `Sicherungen/`; Migration aus `Kundenzeit` und früheren Einzeldateien. |
-| Bedienung | Deutsche Oberfläche; Startansicht **Zeiten**; Bereiche Zeiten, Übersicht und Stammdaten über Kopfzeile oder `⌘1–3`; manuelle Erfassung mit `⌘N`. |
+| Bedienung | Deutsche Oberfläche; Startansicht **Zeiten**; Bereiche Zeiten, Übersicht und Stammdaten über Kopfzeile oder `⌘1–3`; manuelle Erfassung mit `⌘N`; Timerstart mit Leertaste. |
 | Gestaltung | Ruhige native macOS-Oberfläche. Kopfzeile: Icon und App-Name links, Bereichsnavigation mittig, seltene Datenaktionen rechts. |
 | Timerregel | Timer verwendet den gespeicherten Startzeitpunkt; ein Timer über Mitternacht bleibt beim Startdatum, bis eine andere Regel beschlossen wird. |
 | Abnahme | Tests für Persistenz, Migration und Datumsfilter; Bundle bauen, Plist und Signatur prüfen; anschließend Navigation, Timer, manuelle Erfassung, Filter, Kalender, Datenmenü und Dock im fertigen Bundle prüfen. |

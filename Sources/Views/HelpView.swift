@@ -14,6 +14,7 @@ struct HelpView: View {
             GroupBox("Tastenkombinationen") {
                 VStack(spacing: 10) {
                     ShortcutRow(keys: "⌘N", description: "Manuelle Zeiterfassung öffnen")
+                    ShortcutRow(keys: "Leertaste", description: "Timer starten")
                     ShortcutRow(keys: "⌘1", description: "Bereich Zeiten öffnen")
                     ShortcutRow(keys: "⌘2", description: "Bereich Übersicht öffnen")
                     ShortcutRow(keys: "⌘3", description: "Bereich Stammdaten öffnen")

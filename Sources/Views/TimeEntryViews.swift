@@ -25,7 +25,7 @@ struct TimeEntryForm: View {
                     TextField("Jira-Ticket", text: $ticket).focused($focusedField, equals: .ticket)
                 }
                 if manual { GridRow { DatePicker("Datum", selection: $date, displayedComponents: .date); TextField("Minuten", value: $minutes, format: .number); Button("Zeit speichern") { save() }.buttonStyle(.borderedProminent) } }
-                else { GridRow { TextField("Notiz (optional)", text: $note).focused($focusedField, equals: .note); Button("Timer starten") { start() }.buttonStyle(.borderedProminent); EmptyView() } }
+                else { GridRow { TextField("Notiz (optional)", text: $note).focused($focusedField, equals: .note); Button("Timer starten") { start() }.buttonStyle(.borderedProminent).keyboardShortcut(" ", modifiers: []).help("Timer starten (Leertaste)"); EmptyView() } }
             }
             if manual { TextField("Notiz (optional)", text: $note).focused($focusedField, equals: .note); HStack { Spacer(); Button("Zeit speichern") { save() }.buttonStyle(.borderedProminent) } }
             if showValidation, !missingFields.isEmpty {
