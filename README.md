@@ -134,4 +134,4 @@ test.sh                             lokaler Testlauf
 
 Minuto verarbeitet Daten ausschließlich lokal. Es gibt keine Anmeldung, Cloud-Synchronisierung oder Telemetrie.
 
-Der Build ist ad hoc signiert. Eine Developer-ID-Signatur, Notarisierung und ein Release-Prozess für externe Macs sind noch nicht eingerichtet.
+Minuto ist für die lokale Verwendung auf diesem Mac vorgesehen und ad hoc signiert. Developer-ID-Signierung, Notarisierung und Unterstützung externer Macs gehören nicht zum Projektumfang.

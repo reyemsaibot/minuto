@@ -6,16 +6,16 @@ Diese Liste enthält bewusst verschobene Themen. Der aktuelle native Kernablauf 
 
 - [ ] Importvorschau mit Anzahl neuer, aktualisierter und kollidierender Einträge.
 - [ ] Entscheidung, ob Timer über Mitternacht automatisch in Tagesbuchungen aufgeteilt werden sollen.
-- [ ] Sichtbare UI-Abnahme des finalen Bundles: Dock, Finder, `⌘Tab`, Fenstergrößen und Interaktionen.
 
-## Veröffentlichung
+## Betrieb und Qualität
 
 - [ ] GitHub-Workflow nach dem ersten Push beobachten und dokumentieren.
-- [ ] GitHub Release-Prozess mit ZIP-Paket und Versionsnummern einrichten.
-- [ ] Mit Developer ID signieren und für macOS notarisieren.
-- [ ] Universal-Build oder Intel-Support gezielt entscheiden und prüfen.
+- [ ] Sichtbare UI-Abnahme des finalen Bundles dokumentieren.
 
 ## Optional
+
+- [ ] Universal-Build oder Intel-Support gezielt entscheiden und prüfen.
+- [ ] GitHub Release-Prozess mit ZIP-Paket und Versionsnummern einrichten.
 
 - [ ] Wiederherstellungsdialog mit Vorschau und expliziter Konfliktanzeige.
 - [ ] Verschlüsselte, vom Nutzer aktivierte externe Sicherungen evaluieren.
