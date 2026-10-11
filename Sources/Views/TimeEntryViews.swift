@@ -20,11 +20,29 @@ struct TimeEntryForm: View {
             HStack { Picker("Art", selection: $manual) { Text("Timer").tag(false); Text("Manuell").tag(true) }.pickerStyle(.segmented).frame(width: 200); Spacer(); if store.activeTimer != nil { Label("Timer läuft", systemImage: "timer").foregroundStyle(.secondary) } }
             Grid(horizontalSpacing: 12, verticalSpacing: 12) {
                 GridRow {
-                    TextField("Kunde", text: $customer).focused($focusedField, equals: .customer)
-                    TextField("Projekt", text: $project).focused($focusedField, equals: .project)
-                    TextField("Jira-Ticket", text: $ticket).focused($focusedField, equals: .ticket)
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text("Kunde").font(.caption).foregroundStyle(.secondary)
+                        TextField("Kunde", text: $customer).focused($focusedField, equals: .customer)
+                    }
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text("Projekt").font(.caption).foregroundStyle(.secondary)
+                        TextField("Projekt", text: $project).focused($focusedField, equals: .project)
+                    }
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text("Jira-Ticket").font(.caption).foregroundStyle(.secondary)
+                        TextField("Jira-Ticket", text: $ticket).focused($focusedField, equals: .ticket)
+                    }
                 }
-                if manual { GridRow { DatePicker("Datum", selection: $date, displayedComponents: .date); TextField("Minuten", value: $minutes, format: .number); Button("Zeit speichern") { save() }.buttonStyle(.borderedProminent) } }
+                if manual { GridRow {
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text("Datum").font(.caption).foregroundStyle(.secondary)
+                        DatePicker("Datum", selection: $date, displayedComponents: .date)
+                            .labelsHidden()
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    TextField("Minuten", value: $minutes, format: .number)
+                    Button("Zeit speichern") { save() }.buttonStyle(.borderedProminent)
+                } }
                 else { GridRow { TextField("Notiz (optional)", text: $note).focused($focusedField, equals: .note); Button("Timer starten") { start() }.buttonStyle(.borderedProminent).keyboardShortcut(" ", modifiers: []).help("Timer starten (Leertaste)"); EmptyView() } }
             }
             if manual { TextField("Notiz (optional)", text: $note).focused($focusedField, equals: .note); HStack { Spacer(); Button("Zeit speichern") { save() }.buttonStyle(.borderedProminent) } }
