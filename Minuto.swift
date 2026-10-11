@@ -136,15 +136,26 @@ private struct LegacyMasterData: Codable {
 
 extension JSONEncoder { static var minuto: JSONEncoder { let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601; encoder.outputFormatting = [.prettyPrinted, .sortedKeys]; return encoder } }
 extension JSONDecoder { static var minuto: JSONDecoder { let decoder = JSONDecoder(); decoder.dateDecodingStrategy = .iso8601; return decoder } }
+extension Notification.Name { static let minutoStartManualEntry = Notification.Name("minutoStartManualEntry") }
 
 @main struct MinutoApp: App {
     @StateObject private var store = MinutoStore()
-    var body: some Scene { WindowGroup("Minuto") { RootView().environmentObject(store).frame(minWidth: 980, minHeight: 700) }.windowStyle(.titleBar) }
+    var body: some Scene {
+        WindowGroup("Minuto") { RootView().environmentObject(store).frame(minWidth: 980, minHeight: 700) }
+            .windowStyle(.titleBar)
+            .commands {
+                CommandGroup(after: .newItem) {
+                    Button("Manuelle Zeiterfassung") { NotificationCenter.default.post(name: .minutoStartManualEntry, object: nil) }
+                        .keyboardShortcut("n", modifiers: .command)
+                }
+            }
+    }
 }
 
 struct RootView: View {
     @EnvironmentObject private var store: MinutoStore
     @State private var selection = 0
+    @State private var showManualEntry = false
     var body: some View {
         VStack(spacing: 0) {
             HStack {
@@ -167,10 +178,16 @@ struct RootView: View {
             .padding(.vertical, 12)
             .background(.bar)
             Divider()
-            if selection == 0 { TimeWorkspace() }
+            if let activeTimer = store.activeTimer { ActiveTimerBanner(entry: activeTimer) }
+            if selection == 0 { TimeWorkspace(showManualEntry: $showManualEntry) }
             else if selection == 1 { OverviewView() }
             else { MasterDataWorkspace() }
-        }.alert("Minuto", isPresented: .constant(store.error != nil), actions: { Button("OK") { store.error = nil } }, message: { Text(store.error ?? "") })
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .minutoStartManualEntry)) { _ in
+            selection = 0
+            showManualEntry = true
+        }
+        .alert("Minuto", isPresented: .constant(store.error != nil), actions: { Button("OK") { store.error = nil } }, message: { Text(store.error ?? "") })
     }
 }
 
@@ -188,9 +205,31 @@ struct AppBrandView: View {
     }
 }
 
-struct TimeWorkspace: View {
+struct ActiveTimerBanner: View {
     @EnvironmentObject private var store: MinutoStore
-    var body: some View { ScrollView { VStack(alignment: .leading, spacing: 18) { TimeEntryForm(); EntryList() }.padding(24) } }
+    let entry: TimeEntry
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "timer").foregroundStyle(.tint)
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Timer läuft").font(.caption.weight(.medium)).foregroundStyle(.secondary)
+                Text("\(entry.customer) · \(entry.project) · \(entry.ticket)").lineLimit(1)
+            }
+            Spacer()
+            TimerText(start: entry.startedAt ?? Date())
+            Button("Stoppen & speichern") { store.stop(entry) }.buttonStyle(.borderedProminent)
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 9)
+        .background(Color.accentColor.opacity(0.10))
+        .accessibilityIdentifier("active-timer")
+    }
+}
+
+struct TimeWorkspace: View {
+    @Binding var showManualEntry: Bool
+    var body: some View { ScrollView { VStack(alignment: .leading, spacing: 18) { TimeEntryForm(showManualEntry: $showManualEntry); EntryList() }.padding(24) } }
 }
 
 struct MasterDataWorkspace: View {
@@ -207,6 +246,7 @@ struct MasterDataWorkspace: View {
 
 struct TimeEntryForm: View {
     @EnvironmentObject private var store: MinutoStore
+    @Binding var showManualEntry: Bool
     @State private var manual = false
     @State private var customer = ""
     @State private var project = ""
@@ -214,22 +254,68 @@ struct TimeEntryForm: View {
     @State private var note = ""
     @State private var minutes = 60.0
     @State private var date = Date()
+    @FocusState private var focusedField: EntryField?
+
+    private enum EntryField: Hashable { case customer, project, ticket, note }
+
     var body: some View {
         GroupBox { VStack(alignment: .leading, spacing: 14) {
-            HStack { Picker("Art", selection: $manual) { Text("Timer").tag(false); Text("Manuell").tag(true) }.pickerStyle(.segmented).frame(width: 200); Spacer(); if let active = store.activeTimer { TimerText(start: active.startedAt!) } }
-            if let active = store.activeTimer { HStack { VStack(alignment: .leading) { Text(active.customer).font(.headline); Text("\(active.project) · \(active.ticket)").foregroundStyle(.secondary) }; Spacer(); Button("Stoppen & speichern") { store.stop(active) }.buttonStyle(.borderedProminent) } }
+            HStack { Picker("Art", selection: $manual) { Text("Timer").tag(false); Text("Manuell").tag(true) }.pickerStyle(.segmented).frame(width: 200); Spacer(); if store.activeTimer != nil { Label("Timer läuft", systemImage: "timer").foregroundStyle(.secondary) } }
             Grid(horizontalSpacing: 12, verticalSpacing: 12) {
-                GridRow { TextField("Kunde", text: $customer); TextField("Projekt", text: $project); TextField("Jira-Ticket", text: $ticket) }
+                GridRow {
+                    TextField("Kunde", text: $customer).focused($focusedField, equals: .customer)
+                    TextField("Projekt", text: $project).focused($focusedField, equals: .project)
+                    TextField("Jira-Ticket", text: $ticket).focused($focusedField, equals: .ticket)
+                }
                 if manual { GridRow { DatePicker("Datum", selection: $date, displayedComponents: .date); TextField("Minuten", value: $minutes, format: .number); Button("Zeit speichern") { save() }.buttonStyle(.borderedProminent) } }
-                else { GridRow { TextField("Notiz (optional)", text: $note); Button("Timer starten") { start() }.buttonStyle(.borderedProminent); EmptyView() } }
+                else { GridRow { TextField("Notiz (optional)", text: $note).focused($focusedField, equals: .note); Button("Timer starten") { start() }.buttonStyle(.borderedProminent); EmptyView() } }
             }
-            if manual { TextField("Notiz (optional)", text: $note); HStack { Spacer(); Button("Zeit speichern") { save() }.buttonStyle(.borderedProminent) } }
-            if !store.activeMasters.isEmpty { Menu("Stammdaten übernehmen") { ForEach(store.activeMasters) { master in Button("\(master.favorite ? "★ " : "")\(master.customer) · \(master.project)") { customer = master.customer; project = master.project } } } }
+            if manual { TextField("Notiz (optional)", text: $note).focused($focusedField, equals: .note); HStack { Spacer(); Button("Zeit speichern") { save() }.buttonStyle(.borderedProminent) } }
+            MasterDataPicker { master in customer = master.customer; project = master.project }
         }.padding(4) } label: { Text("Zeiten erfassen").font(.headline) }
+        .task(id: showManualEntry) { consumeManualEntryRequest() }
     }
     private func start() { guard !customer.isEmpty, !project.isEmpty, !ticket.isEmpty, store.activeTimer == nil else { return }; store.add(TimeEntry(id: UUID(), customer: customer, project: project, ticket: ticket, date: Date(), seconds: 0, startedAt: Date(), billed: false, billingTicket: nil, note: note.nilIfEmpty)); reset() }
     private func save() { guard !customer.isEmpty, !project.isEmpty, !ticket.isEmpty, minutes > 0 else { return }; store.add(TimeEntry(id: UUID(), customer: customer, project: project, ticket: ticket, date: date, seconds: Int(minutes * 60), startedAt: nil, billed: false, billingTicket: nil, note: note.nilIfEmpty)); reset() }
     private func reset() { customer = ""; project = ""; ticket = ""; note = ""; minutes = 60; date = Date() }
+    private func consumeManualEntryRequest() { guard showManualEntry else { return }; manual = true; date = Date(); showManualEntry = false; DispatchQueue.main.async { focusedField = .customer } }
+}
+
+struct MasterDataPicker: View {
+    @EnvironmentObject private var store: MinutoStore
+    @State private var expanded = false
+    @State private var query = ""
+    let onSelect: (MasterData) -> Void
+
+    private var matches: [MasterData] {
+        store.activeMasters.filter { query.isEmpty || "\($0.customer) \($0.project) \($0.billingTicket)".localizedCaseInsensitiveContains(query) }
+    }
+
+    var body: some View {
+        if !store.activeMasters.isEmpty {
+            DisclosureGroup("Stammdaten auswählen", isExpanded: $expanded) {
+                TextField("Kunde oder Projekt suchen", text: $query)
+                    .textFieldStyle(.roundedBorder)
+                    .padding(.vertical, 4)
+                ForEach(matches.prefix(8)) { master in
+                    Button {
+                        onSelect(master)
+                        expanded = false
+                    } label: {
+                        HStack {
+                            if master.favorite { Image(systemName: "star.fill").foregroundStyle(.yellow) }
+                            Text(master.customer).fontWeight(.medium)
+                            Text("· \(master.project)").foregroundStyle(.secondary)
+                            Spacer()
+                            Text(master.billingTicket).foregroundStyle(.tertiary)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.vertical, 3)
+                }
+            }
+        }
+    }
 }
 
 struct EntryList: View {
@@ -240,6 +326,7 @@ struct EntryList: View {
     @State private var note = ""
     @State private var from = Calendar.current.date(byAdding: .month, value: -1, to: Date())!
     @State private var to = Date()
+    @State private var entryBeingEdited: TimeEntry?
     var rows: [TimeEntry] {
         let calendar = Calendar.current
         let firstDay = calendar.startOfDay(for: min(from, to))
@@ -252,13 +339,107 @@ struct EntryList: View {
             entry.date >= firstDay && entry.date < dayAfterLast
         }
     }
-    var body: some View { GroupBox("Zeiteinträge") { VStack(alignment: .leading) {
+    var body: some View { GroupBox("Zeiteinträge") { VStack(alignment: .leading, spacing: 10) {
         HStack { TextField("Kunde filtern", text: $customer); TextField("Jira-Ticket", text: $ticket); TextField("Notiz", text: $note); DatePicker("Von", selection: $from, displayedComponents: .date); DatePicker("Bis", selection: $to, displayedComponents: .date) }
+        HStack(spacing: 8) {
+            Text("Zeitraum:").foregroundStyle(.secondary)
+            Button("Heute") { applyQuickRange(.today) }
+            Button("Diese Woche") { applyQuickRange(.week) }
+            Button("Letzte 30 Tage") { applyQuickRange(.lastThirtyDays) }
+            Button("Alles") { applyQuickRange(.all) }
+            Spacer()
+        }.controlSize(.small)
         Picker("Status", selection: $status) { Text("Offen").tag(0); Text("Archiv").tag(1); Text("Alle").tag(2) }.pickerStyle(.segmented).frame(width: 280)
         HStack { Text("\(rows.count) Einträge · \(hours(rows))").foregroundStyle(.secondary); Spacer(); Button("CSV exportieren") { store.exportCSV(rows) } }
-        Table(rows) { TableColumn("Kunde / Projekt") { Text("\($0.customer)\n\($0.project)") }; TableColumn("Jira-Ticket / Notiz") { Text("\($0.ticket)\n\($0.note ?? "")") }; TableColumn("Abrechnungsticket") { entry in Text(store.billingTicket(for: entry) ?? "–") }; TableColumn("Dauer") { Text(format($0.seconds)) }; TableColumn("Status") { Text($0.billed ? "Archiv" : "Offen") }; TableColumn("Aktionen") { row in HStack { if !row.billed { Button("⧉") { duplicate(row) }.help("Duplizieren"); Button("✓") { store.close(row) }.help("Abschließen") }; Button(row.billed ? "↺" : "✎") { if row.billed { store.reopen(row) } }.help(row.billed ? "Wieder öffnen" : "Bearbeiten folgt"); Button("🗑") { store.delete(row) }.help("Löschen") } } }.frame(minHeight: 260)
-    }.padding(4) } }
+        Table(rows) {
+            TableColumn("Kunde / Projekt") { Text("\($0.customer)\n\($0.project)") }
+            TableColumn("Jira-Ticket / Notiz") { Text("\($0.ticket)\n\($0.note ?? "")") }
+            TableColumn("Abrechnungsticket") { entry in Text(store.billingTicket(for: entry) ?? "–") }
+            TableColumn("Dauer") { Text(format($0.seconds)) }
+            TableColumn("Status") { Text($0.billed ? "Archiv" : "Offen") }
+            TableColumn("Aktionen") { row in
+                HStack(spacing: 9) {
+                    if !row.billed {
+                        Button { duplicate(row) } label: { Image(systemName: "plus.square.on.square") }.help("Duplizieren")
+                        if row.startedAt == nil { Button { entryBeingEdited = row } label: { Image(systemName: "pencil") }.help("Bearbeiten") }
+                        Button { store.close(row) } label: { Image(systemName: "checkmark") }.help("Abschließen")
+                    } else {
+                        Button { store.reopen(row) } label: { Image(systemName: "arrow.counterclockwise") }.help("Wieder öffnen")
+                    }
+                    Button(role: .destructive) { store.delete(row) } label: { Image(systemName: "trash") }.help("Löschen")
+                }
+                .labelStyle(.iconOnly)
+            }
+        }.frame(minHeight: 260)
+    }.padding(4) }
+    .sheet(item: $entryBeingEdited) { entry in TimeEntryEditor(entry: entry) }
+    }
     private func duplicate(_ e: TimeEntry) { store.add(TimeEntry(id: UUID(), customer: e.customer, project: e.project, ticket: e.ticket, date: Date(), seconds: e.seconds, startedAt: nil, billed: false, billingTicket: nil, note: e.note)) }
+    private enum QuickRange { case today, week, lastThirtyDays, all }
+    private func applyQuickRange(_ range: QuickRange) {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        switch range {
+        case .today: from = today; to = today
+        case .week:
+            let interval = calendar.dateInterval(of: .weekOfYear, for: today)
+            from = interval?.start ?? today
+            to = calendar.date(byAdding: .day, value: -1, to: interval?.end ?? today) ?? today
+        case .lastThirtyDays: from = calendar.date(byAdding: .day, value: -29, to: today) ?? today; to = today
+        case .all: from = store.entries.map(\.date).min() ?? today; to = store.entries.map(\.date).max() ?? today
+        }
+    }
+}
+
+struct TimeEntryEditor: View {
+    @EnvironmentObject private var store: MinutoStore
+    @Environment(\.dismiss) private var dismiss
+    let entry: TimeEntry
+    @State private var customer: String
+    @State private var project: String
+    @State private var ticket: String
+    @State private var note: String
+    @State private var minutes: Double
+    @State private var date: Date
+
+    init(entry: TimeEntry) {
+        self.entry = entry
+        _customer = State(initialValue: entry.customer)
+        _project = State(initialValue: entry.project)
+        _ticket = State(initialValue: entry.ticket)
+        _note = State(initialValue: entry.note ?? "")
+        _minutes = State(initialValue: Double(entry.seconds) / 60)
+        _date = State(initialValue: entry.date)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Zeiteintrag bearbeiten").font(.title2.bold())
+            Grid(horizontalSpacing: 12, verticalSpacing: 12) {
+                GridRow { TextField("Kunde", text: $customer); TextField("Projekt", text: $project) }
+                GridRow { TextField("Jira-Ticket", text: $ticket); TextField("Minuten", value: $minutes, format: .number) }
+                GridRow { DatePicker("Datum", selection: $date, displayedComponents: .date); EmptyView() }
+            }
+            TextField("Notiz", text: $note)
+            MasterDataPicker { master in customer = master.customer; project = master.project }
+            HStack { Spacer(); Button("Abbrechen") { dismiss() }; Button("Speichern") { save() }.buttonStyle(.borderedProminent).keyboardShortcut(.defaultAction) }
+        }
+        .padding(24)
+        .frame(width: 520)
+    }
+
+    private func save() {
+        guard !customer.isEmpty, !project.isEmpty, !ticket.isEmpty, minutes > 0 else { return }
+        var updated = entry
+        updated.customer = customer
+        updated.project = project
+        updated.ticket = ticket
+        updated.note = note.nilIfEmpty
+        updated.date = date
+        updated.seconds = Int((minutes * 60).rounded())
+        store.update(updated)
+        dismiss()
+    }
 }
 
 struct MasterDataView: View {

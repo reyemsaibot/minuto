@@ -9,7 +9,7 @@ Minuto ist eine lokale macOS-App zur persönlichen Zeiterfassung. Zeiten werden 
 - Kunden, Projekte, Jira-Tickets und Abrechnungstickets
 - Stammdaten für `Kunde → Projekt → Abrechnungsticket`
 - Favoriten und archivierte Projekte
-- Einträge duplizieren, abschließen, wieder öffnen und löschen
+- Einträge bearbeiten, duplizieren, abschließen, wieder öffnen und löschen
 - Filter für Kunde, Jira-Ticket, Notiz und Zeitraum
 - CSV-Export der aktuell gefilterten Einträge
 - JSON-Datensicherung, Import und Wiederherstellung
@@ -49,7 +49,7 @@ Der Timer läuft auch bei geschlossenem Fenster weiter. Während er läuft, lass
 
 Unter **Stammdaten verwalten** werden Zuordnungen aus Kunde, Projekt und Abrechnungsticket hinterlegt.
 
-- Aktive Kunden und Projekte stehen bei der Erfassung zur Übernahme bereit.
+- Aktive Kunden und Projekte lassen sich in der Erfassung durchsuchen und übernehmen.
 - Ein Stern markiert häufig verwendete Zuordnungen als Favorit.
 - Das Status-Symbol archiviert Projekte; archivierte Projekte können wieder aktiviert werden.
 - Beim Abschließen wird ein passendes Abrechnungsticket automatisch übernommen.
@@ -68,6 +68,7 @@ Die Listenansichten sind:
 Aktionen für offene Einträge:
 
 - `⧉` als Vorlage duplizieren
+- Stift: bearbeiten
 - Haken: abschließen
 - Papierkorb: löschen
 
@@ -79,8 +80,7 @@ Der Reiter **Übersicht** enthält Tages- und Wochenstunden, die Sollzeit pro Ta
 
 Tastaturkürzel:
 
-- `N` – manuelle Erfassung öffnen
-- Leertaste – Timer-Modus öffnen
+- `⌘N` – manuelle Erfassung öffnen und den Cursor auf **Kunde** setzen
 
 ## Daten, Sicherung und Wiederherstellung
 
