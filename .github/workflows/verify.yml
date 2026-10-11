@@ -1,0 +1,21 @@
+name: Verifizieren
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Persistenztests
+        run: ./test.sh
+      - name: App bauen
+        run: ./build.sh
+      - name: Bundle prüfen
+        run: |
+          plutil -lint build/Minuto.app/Contents/Info.plist
+          test -x build/Minuto.app/Contents/MacOS/Minuto
+          test -f build/Minuto.app/Contents/Resources/Minuto.icns
+          codesign --verify --deep --strict build/Minuto.app

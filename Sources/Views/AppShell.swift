@@ -5,6 +5,7 @@ struct RootView: View {
     @EnvironmentObject private var store: MinutoStore
     @State private var selection = 0
     @State private var showManualEntry = false
+    @State private var showHelp = false
     var body: some View {
         VStack(spacing: 0) {
             HStack {
@@ -16,19 +17,27 @@ struct RootView: View {
                     .accessibilityIdentifier("main-navigation")
                 Spacer()
                 Menu("Daten") {
-                    Button("Sicherung exportieren") { store.export() }
-                    Button("Einträge importieren und zusammenführen") { store.importEntries(replace: false) }
-                    Button("Einträge wiederherstellen") { store.importEntries(replace: true) }
+                    Button("Sicherung exportieren") { store.exportBackup() }
+                    Button("Einträge importieren und zusammenführen") { store.importBackup(replace: false) }
+                    Button("Einträge wiederherstellen") { store.importBackup(replace: true) }
                     Divider()
                     Button("Datenordner öffnen") { store.openFolder() }
                 }.accessibilityIdentifier("data-menu")
+                Button { showHelp = true } label: { Label("Hilfe", systemImage: "questionmark.circle") }
+                    .buttonStyle(.bordered)
+                    .help("Hilfe und Tastenkombinationen")
+                    .accessibilityIdentifier("help-button")
             }
             .padding(.horizontal, 24)
             .padding(.vertical, 12)
             .background(.bar)
             Divider()
             if let activeTimer = store.activeTimer { ActiveTimerBanner(entry: activeTimer) }
-            if selection == 0 { TimeWorkspace(showManualEntry: $showManualEntry) }
+            if store.isLoading {
+                Spacer()
+                ProgressView("Daten werden geladen …")
+                Spacer()
+            } else if selection == 0 { TimeWorkspace(showManualEntry: $showManualEntry) }
             else if selection == 1 { OverviewView() }
             else { MasterDataWorkspace() }
         }
@@ -36,7 +45,11 @@ struct RootView: View {
             selection = 0
             showManualEntry = true
         }
-        .alert("Minuto", isPresented: .constant(store.error != nil), actions: { Button("OK") { store.error = nil } }, message: { Text(store.error ?? "") })
+        .onReceive(NotificationCenter.default.publisher(for: .minutoSelectArea)) { notification in
+            if let area = notification.object as? Int { selection = area }
+        }
+        .sheet(isPresented: $showHelp) { HelpView() }
+        .alert("Minuto", isPresented: Binding(get: { store.error != nil }, set: { if !$0 { store.error = nil } }), actions: { Button("OK") { store.error = nil } }, message: { Text(store.error ?? "") })
     }
 }
 

@@ -1,20 +1,19 @@
 # Minuto
 
-Minuto ist eine lokale macOS-App zur persönlichen Zeiterfassung. Zeiten werden Kunden, Projekten und Jira-Tickets zugeordnet und für die spätere Abrechnung vorbereitet. Die App benötigt weder Benutzerkonto noch Internetverbindung.
+Minuto ist eine lokale, native Zeiterfassung für macOS. Sie ordnet Zeiten Kunden, Projekten und Jira-Tickets zu; Abrechnungstickets werden über Stammdaten beim Abschließen ergänzt. Die App benötigt weder Anmeldung noch Internetverbindung.
 
 ## Funktionen
 
-- Timer sowie manuelle Erfassung mit Datum, Dauer und optionaler Notiz
+- Timer und manuelle Erfassung mit Datum, Dauer und optionaler Notiz
 - Manuelle Buchungen auch bei laufendem Timer
-- Kunden, Projekte, Jira-Tickets und Abrechnungstickets
-- Stammdaten für `Kunde → Projekt → Abrechnungsticket`
-- Favoriten und archivierte Projekte
+- Kunde → Projekt → Abrechnungsticket als eindeutige Stammdatenzuordnung
+- Favoriten, archivierte Projekte und Vorschläge aus Stammdaten
 - Einträge bearbeiten, duplizieren, abschließen, wieder öffnen und löschen
-- Filter für Kunde, Jira-Ticket, Notiz und Zeitraum
+- Filter für Kunde, Jira-Ticket, Notiz, Status und lokalen Datumsbereich
 - CSV-Export der aktuell gefilterten Einträge
-- JSON-Datensicherung, Import und Wiederherstellung
-- Tages- und Wochenübersicht mit konfigurierbarer Sollzeit
-- Kalender, Kennzahlen und Wochenabschluss
+- Versionierte JSON-Sicherungen, Import und Wiederherstellung
+- Automatische Sicherung vor jeder gespeicherten Änderung, Aufbewahrung der letzten 30 Sicherungen
+- Tages- und Wochenübersicht, Sollzeit, Kalender, Kennzahlen und persistenter Wochenabschluss
 - Native SwiftUI-Oberfläche ohne Web- oder JavaScript-Runtime
 
 ## Installation
@@ -36,51 +35,40 @@ Minuto ist lokal signiert, wird aber nicht über den Mac App Store verteilt.
 3. **Timer starten** wählen.
 4. Zum Ende der Arbeit **Stoppen & speichern** wählen.
 
-Der Timer läuft auch bei geschlossenem Fenster weiter. Während er läuft, lassen sich über den Reiter **Manuell** weitere Zeiten buchen.
+Der Timer basiert auf dem gespeicherten Startzeitpunkt und läuft auch bei geschlossenem Fenster weiter. Während er läuft, lassen sich über **Manuell** weitere Zeiten buchen. Ein Timer, der über Mitternacht läuft, bleibt derzeit dem Datum seines Starts zugeordnet.
 
 ### Manuelle Erfassung
 
-1. Zum Reiter **Manuell** wechseln.
+1. Zu **Manuell** wechseln.
 2. Kunde, Projekt, Jira-Ticket und Dauer eintragen.
-3. Das Datum wird automatisch auf den heutigen Tag gesetzt und kann geändert werden.
+3. Das Datum ist automatisch auf heute gesetzt und kann geändert werden.
 4. Notiz optional ergänzen und speichern.
 
 ## Stammdaten und Abrechnung
 
-Unter **Stammdaten verwalten** werden Zuordnungen aus Kunde, Projekt und Abrechnungsticket hinterlegt.
+Unter **Stammdaten** werden Zuordnungen aus Kunde, Projekt und Abrechnungsticket hinterlegt.
 
-- Aktive Kunden und Projekte lassen sich in der Erfassung durchsuchen und übernehmen.
+- Eine Kunde/Projekt-Kombination kann nur einmal gespeichert werden.
+- Aktive Zuordnungen werden während der Erfassung vorgeschlagen.
 - Ein Stern markiert häufig verwendete Zuordnungen als Favorit.
-- Das Status-Symbol archiviert Projekte; archivierte Projekte können wieder aktiviert werden.
+- Archivierte Projekte können wieder aktiviert werden.
 - Beim Abschließen wird ein passendes Abrechnungsticket automatisch übernommen.
-- Fehlt eine Zuordnung, kann der Eintrag dennoch abgeschlossen werden.
+- Fehlt ein Abrechnungsticket, lässt sich der Eintrag trotzdem abschließen.
 
-Das **Jira-Ticket** gehört zum Zeiteintrag. Das **Abrechnungsticket** ist ein separates Feld für die spätere Abrechnung.
+Das Jira-Ticket gehört zum Zeiteintrag. Das Abrechnungsticket ist ein separates Feld für die spätere Abrechnung.
 
-## Einträge verwalten
+## Einträge und Übersicht
 
-Die Listenansichten sind:
+Die Liste zeigt offene, archivierte oder alle Einträge. Der CSV-Export verwendet immer genau die gefilterte Datenmenge. Die Datumsfilter schließen den ausgewählten Bis-Tag vollständig ein.
 
-- **Offen** – noch nicht abgeschlossene Einträge
-- **Archiv** – abgeschlossene Einträge
-- **Alle** – vollständiger Bestand
-
-Aktionen für offene Einträge:
-
-- `⧉` als Vorlage duplizieren
-- Stift: bearbeiten
-- Haken: abschließen
-- Papierkorb: löschen
-
-Der CSV-Export berücksichtigt immer die aktuell gesetzten Filter.
-
-## Übersicht
-
-Der Reiter **Übersicht** enthält Tages- und Wochenstunden, die Sollzeit pro Tag, Kennzahlen nach Kunde und Projekt, einen Monatskalender und den Wochenabschluss.
+Die Übersicht enthält Tages- und Wochenstunden, Sollzeit, Kennzahlen, einen Monatskalender und den Wochenabschluss. Ein abgeschlossener Wochenstand enthält Zeitpunkt, Anzahl und Summe der zu diesem Zeitpunkt vorhandenen Einträge; er bleibt nach einem Neustart erhalten.
 
 Tastaturkürzel:
 
-- `⌘N` – manuelle Erfassung öffnen und den Cursor auf **Kunde** setzen
+- `⌘N` – manuelle Erfassung öffnen
+- `⌘1` – Zeiten
+- `⌘2` – Übersicht
+- `⌘3` – Stammdaten
 
 ## Daten, Sicherung und Wiederherstellung
 
@@ -92,16 +80,18 @@ Minuto speichert alle persönlichen Daten lokal unter:
 
 Wichtige Dateien:
 
-- `zeiten.json` – Zeiteinträge
-- `stammdaten.json` – Stammdaten
-- `Sicherungen/` – automatische Sicherungen vor Änderungen
+- `minuto.json` – versionierter Gesamtbestand mit Einträgen, Stammdaten, Sollzeit und Wochenabschlüssen
+- `Sicherungen/` – automatische Sicherungen vor Änderungen; die letzten 30 Versionen bleiben erhalten
+- `zeiten.json` und `stammdaten.json` – frühere Datenformate, die beim ersten Start geprüft und in den Gesamtbestand migriert werden
 
-Über das Menü **Daten** stehen diese Funktionen bereit:
+Über **Daten** stehen diese Funktionen bereit:
 
-- **Datensicherung** exportiert den aktuellen Zeitbestand als JSON-Datei.
-- **Importieren** führt JSON-Zeiteinträge mit dem vorhandenen Bestand zusammen.
-- **Wiederherstellen** ersetzt den Zeitbestand durch eine JSON-Sicherung.
-- **Datenordner** öffnet den lokalen Speicherort im Finder.
+- **Sicherung exportieren** erzeugt eine vollständige portable JSON-Sicherung.
+- **Einträge importieren und zusammenführen** übernimmt Zeiteinträge und fügt neue Stammdaten hinzu.
+- **Einträge wiederherstellen** ersetzt den Zeitbestand; bei vollständigen Minuto-Sicherungen werden auch Stammdaten, Sollzeit und Wochenabschlüsse wiederhergestellt.
+- **Datenordner öffnen** öffnet den Speicherort im Finder.
+
+Importdateien werden vor der Übernahme vollständig gelesen und validiert. Vor der resultierenden Änderung legt Minuto eine automatische Sicherung des bisherigen Gesamtbestands an.
 
 ## Entwicklung
 
@@ -109,27 +99,35 @@ Wichtige Dateien:
 
 - macOS 13 oder neuer
 - Xcode Command Line Tools
+- Apple Silicon für den gegenwärtigen lokalen Build
 
-### Build
+### Build und Tests
 
 ```bash
+./test.sh
 ./build.sh
 ```
 
-Das Build-Skript kompiliert die native SwiftUI-App, bindet das App-Icon ein und erstellt `build/Minuto.app`. Es werden weder Node.js noch ein Browser-Container benötigt.
+`test.sh` prüft Migration, Sicherungen, doppelte Stammdaten und Datumsgrenzen. `build.sh` erzeugt `build/Minuto.app`, bindet Icon und Metadaten ein und signiert lokal ad hoc. Der GitHub-Workflow führt Tests, Build, Plist- und Signaturprüfung bei Pushes und Pull Requests aus.
 
 ## Projektstruktur
 
 ```text
-Sources/Models.swift             Datenmodelle und Legacy-Migrationsmodelle
-Sources/MinutoStore.swift        lokale Speicherung, Migration, Import und Export
-Sources/Views/                   SwiftUI-Ansichten für Erfassung, Liste und Übersicht
-Sources/Support/Presentation.swift  gemeinsame Darstellung und Formatierung
-Minuto.icns      App-Icon für Finder und Dock
-Info.plist       macOS-App-Metadaten
-build.sh         lokaler macOS-Build
+Sources/Models.swift                Datenmodelle und Sicherungsformat
+Sources/MinutoDomain.swift          fachliche Datums- und Timerregeln
+Sources/MinutoPersistence.swift     lokale Speicherung, Migration und Sicherungen
+Sources/MinutoStore.swift           UI-Status und Hintergrundoperationen
+Sources/Views/                      SwiftUI-Ansichten
+Tests/                              ausführbare Persistenztests
+.github/workflows/verify.yml        CI-Prüfung
+Minuto.icns                         App-Icon für Finder und Dock
+Info.plist                          macOS-App-Metadaten
+build.sh                            lokaler macOS-Build
+test.sh                             lokaler Testlauf
 ```
 
-## Datenschutz
+## Datenschutz und Release-Status
 
-Minuto verarbeitet Daten ausschließlich lokal. Es gibt keine Anmeldung, keine Cloud-Synchronisierung und keine Telemetrie.
+Minuto verarbeitet Daten ausschließlich lokal. Es gibt keine Anmeldung, Cloud-Synchronisierung oder Telemetrie.
+
+Der Build ist ad hoc signiert. Eine Developer-ID-Signatur, Notarisierung und ein Release-Prozess für externe Macs sind noch nicht eingerichtet.

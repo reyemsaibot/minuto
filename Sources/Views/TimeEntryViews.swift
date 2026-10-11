@@ -34,6 +34,12 @@ struct TimeEntryForm: View {
                     .foregroundStyle(.orange)
                     .accessibilityLabel("Fehlende Pflichtfelder: \(missingFields.joined(separator: ", "))")
             }
+            if !suggestedMasters.isEmpty {
+                MasterDataSuggestions(masters: suggestedMasters) { master in
+                    customer = master.customer
+                    project = master.project
+                }
+            }
         }.padding(4) } label: { Text("Zeiten erfassen").font(.headline) }
         .task(id: showManualEntry) { consumeManualEntryRequest() }
     }
@@ -44,6 +50,15 @@ struct TimeEntryForm: View {
         if ticket.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { fields.append("Jira-Ticket") }
         if manual && minutes <= 0 { fields.append("Dauer") }
         return fields
+    }
+    private var suggestedMasters: [MasterData] {
+        let searchTerms = [customer, project].map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+        guard !searchTerms.isEmpty else { return [] }
+        return store.activeMasters.filter { master in
+            searchTerms.allSatisfy { term in
+                master.customer.localizedCaseInsensitiveContains(term) || master.project.localizedCaseInsensitiveContains(term)
+            }
+        }.prefix(5).map { $0 }
     }
     private func start() {
         guard validateRequiredFields(), store.activeTimer == nil else { return }
@@ -70,6 +85,30 @@ struct TimeEntryForm: View {
     private func consumeManualEntryRequest() { guard showManualEntry else { return }; manual = true; date = Date(); showManualEntry = false; DispatchQueue.main.async { focusedField = .customer } }
 }
 
+struct MasterDataSuggestions: View {
+    let masters: [MasterData]
+    let onSelect: (MasterData) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Vorschläge aus Stammdaten").font(.caption).foregroundStyle(.secondary)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(masters) { master in
+                        Button {
+                            onSelect(master)
+                        } label: {
+                            Label("\(master.customer) · \(master.project)", systemImage: master.favorite ? "star.fill" : "person.crop.circle")
+                        }
+                        .buttonStyle(.bordered)
+                        .help("\(master.customer), \(master.project) übernehmen")
+                    }
+                }
+            }
+        }
+    }
+}
+
 struct EntryList: View {
     @EnvironmentObject private var store: MinutoStore
     @State private var status = 0
@@ -80,15 +119,12 @@ struct EntryList: View {
     @State private var to = Date()
     @State private var entryBeingEdited: TimeEntry?
     var rows: [TimeEntry] {
-        let calendar = Calendar.current
-        let firstDay = calendar.startOfDay(for: min(from, to))
-        let dayAfterLast = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: max(from, to)))!
         return store.entries.filter { entry in
             (status == 2 || (status == 0 ? !entry.billed : entry.billed)) &&
             (customer.isEmpty || entry.customer.localizedCaseInsensitiveContains(customer)) &&
             (ticket.isEmpty || entry.ticket.localizedCaseInsensitiveContains(ticket)) &&
             (note.isEmpty || (entry.note ?? "").localizedCaseInsensitiveContains(note)) &&
-            entry.date >= firstDay && entry.date < dayAfterLast
+            MinutoDateRange.contains(entry.date, from: from, to: to)
         }
     }
     var body: some View { GroupBox("Zeiteinträge") { VStack(alignment: .leading, spacing: 10) {
@@ -192,6 +228,9 @@ struct ClearableSearchField: View {
         .padding(.vertical, 8)
         .background(.background, in: RoundedRectangle(cornerRadius: 8))
         .overlay(RoundedRectangle(cornerRadius: 8).stroke(.quaternary, lineWidth: 1))
+        .onExitCommand {
+            if !text.isEmpty { text = "" }
+        }
     }
 }
 

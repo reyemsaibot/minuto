@@ -1,23 +1,23 @@
 # Minuto – TODO
 
-Diese Liste enthält technische und produktbezogene Verbesserungen für die lokale macOS-App. Hosting oder ein Site-Projekt gehören nicht zum Umfang.
+Diese Liste enthält bewusst verschobene Themen. Der aktuelle native Kernablauf mit Sicherung, Import, Stammdaten und Übersicht ist abgedeckt.
 
-## Priorität hoch
+## Nächste Ausbaustufe
 
-- [ ] Automatisierte Tests für Stammdaten, CSV-Export, Import und Wiederherstellung ergänzen.
-- [ ] Test für die einmalige Datenmigration von `Kundenzeit` nach `Minuto` ergänzen.
-- [ ] GitHub Actions einrichten: Build und Selbsttest bei jedem Push ausführen.
-- [ ] Datenformat mit einer Versionsnummer versehen und Migrationspfade dokumentieren.
+- [ ] Importvorschau mit Anzahl neuer, aktualisierter und kollidierender Einträge.
+- [ ] Bearbeiten bestehender Stammdaten direkt in der Liste.
+- [ ] Entscheidung, ob Timer über Mitternacht automatisch in Tagesbuchungen aufgeteilt werden sollen.
+- [ ] Sichtbare UI-Abnahme des finalen Bundles: Dock, Finder, `⌘Tab`, Fenstergrößen und Interaktionen.
 
-## Priorität mittel
+## Veröffentlichung
 
-- [ ] Importvorschau mit Anzahl neuer, aktualisierter und kollidierender Einträge erstellen.
-- [ ] Stammdaten gemeinsam mit Zeiteinträgen sichern, importieren und wiederherstellen.
-- [ ] README um Screenshots und Hinweise für Updates ergänzen.
-
-## Später
-
+- [ ] GitHub-Workflow nach dem ersten Push beobachten und dokumentieren.
 - [ ] GitHub Release-Prozess mit ZIP-Paket und Versionsnummern einrichten.
-- [ ] App mit Developer-ID signieren und für macOS notarisieren.
-- [ ] Optionales Update-Prüfen innerhalb der App evaluieren.
+- [ ] Mit Developer ID signieren und für macOS notarisieren.
+- [ ] Universal-Build oder Intel-Support gezielt entscheiden und prüfen.
 
+## Optional
+
+- [ ] Wiederherstellungsdialog mit Vorschau und expliziter Konfliktanzeige.
+- [ ] Verschlüsselte, vom Nutzer aktivierte externe Sicherungen evaluieren.
+- [ ] Update-Prüfung innerhalb der App evaluieren.
