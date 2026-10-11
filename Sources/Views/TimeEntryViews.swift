@@ -97,10 +97,10 @@ struct EntryList: View {
     }
     var body: some View { GroupBox("Zeiteinträge") { VStack(alignment: .leading, spacing: 10) {
         HStack { TextField("Kunde filtern", text: $customer); TextField("Jira-Ticket", text: $ticket); TextField("Notiz", text: $note); DatePicker("Von", selection: $from, displayedComponents: .date); DatePicker("Bis", selection: $to, displayedComponents: .date) }
-        Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 8) {
-            GridRow {
+        HStack(spacing: 0) {
+            HStack(spacing: 12) {
                 filterLabel("Zeitraum")
-                HStack(spacing: 6) {
+                HStack(spacing: 10) {
                     Button("Heute") { applyQuickRange(.today) }
                     Button("Diese Woche") { applyQuickRange(.week) }
                     Button("Letzte 30 Tage") { applyQuickRange(.lastThirtyDays) }
@@ -109,14 +109,16 @@ struct EntryList: View {
                 .buttonStyle(.bordered)
                 .controlSize(.small)
             }
-            GridRow {
+            Divider().frame(height: 28).padding(.horizontal, 24)
+            HStack(spacing: 12) {
                 filterLabel("Status")
                 Picker("Status", selection: $status) { Text("Offen").tag(0); Text("Archiv").tag(1); Text("Alle").tag(2) }
                     .labelsHidden()
                     .pickerStyle(.segmented)
                     .frame(width: 280)
             }
-        }
+            Spacer(minLength: 0)
+        }.padding(.vertical, 2)
         HStack { Text("\(rows.count) Einträge · \(hours(rows))").foregroundStyle(.secondary); Spacer(); Button("CSV exportieren") { store.exportCSV(rows) } }
         Table(rows) {
             TableColumn("Kunde / Projekt") { Text("\($0.customer)\n\($0.project)") }

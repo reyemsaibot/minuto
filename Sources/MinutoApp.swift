@@ -3,7 +3,7 @@ import SwiftUI
 @main struct MinutoApp: App {
     @StateObject private var store = MinutoStore()
     var body: some Scene {
-        WindowGroup("Minuto") { RootView().environmentObject(store).frame(minWidth: 980, minHeight: 700) }
+        WindowGroup("Minuto") { RootView().environmentObject(store).frame(minWidth: 1120, minHeight: 700) }
             .windowStyle(.titleBar)
             .commands {
                 CommandGroup(after: .newItem) {
