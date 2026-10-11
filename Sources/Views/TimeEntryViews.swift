@@ -62,7 +62,8 @@ struct TimeEntryForm: View {
     }
     private func start() {
         guard validateRequiredFields(), store.activeTimer == nil else { return }
-        store.add(TimeEntry(id: UUID(), customer: customer, project: project, ticket: ticket, date: Date(), seconds: 0, startedAt: Date(), billed: false, billingTicket: nil, note: note.nilIfEmpty))
+        let startedAt = Date()
+        store.add(TimeEntry(id: UUID(), customer: customer, project: project, ticket: ticket, date: MinutoTimerPolicy.entryDate(for: startedAt), seconds: 0, startedAt: startedAt, billed: false, billingTicket: nil, note: note.nilIfEmpty))
         reset()
     }
     private func save() {

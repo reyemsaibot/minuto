@@ -11,4 +11,6 @@ enum MinutoDateRange {
 enum MinutoTimerPolicy {
     /// Ein laufender Timer bleibt dem Kalendertag seines Starts zugeordnet.
     static let dateAssignment = "startDate"
+
+    static func entryDate(for start: Date) -> Date { start }
 }

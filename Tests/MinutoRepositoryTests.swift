@@ -7,6 +7,7 @@ import Foundation
             try await backupsContainEveryDataKind()
             try await rejectDuplicateMastersDuringImport()
             try dateRangeUsesInclusiveCalendarDays()
+            try timerRetainsItsStartDate()
             print("Alle Minuto-Persistenztests bestanden.")
         } catch {
             FileHandle.standardError.write("TEST FEHLGESCHLAGEN: \(error)\n".data(using: .utf8)!)
@@ -75,6 +76,11 @@ import Foundation
         let nextDay = formatter.date(from: "2026-10-07T10:00:00Z")!
         try require(MinutoDateRange.contains(date, from: day, to: day, calendar: calendar), "Der Bis-Tag ist vollständig enthalten.")
         try require(!MinutoDateRange.contains(nextDay, from: day, to: day, calendar: calendar), "Der Folgetag ist ausgeschlossen.")
+    }
+
+    static func timerRetainsItsStartDate() throws {
+        let start = Date(timeIntervalSince1970: 1_760_000_000)
+        try require(MinutoTimerPolicy.entryDate(for: start) == start, "Ein Timer bleibt dem Datum seines Starts zugeordnet.")
     }
 
     static func fixtureEntry() -> TimeEntry { TimeEntry(id: UUID(uuidString: "11111111-1111-1111-1111-111111111111")!, customer: "ENERCON", project: "UC44", ticket: "ITDS-1780", date: Date(timeIntervalSince1970: 1_760_000_000), seconds: 3600, startedAt: nil, billed: false, billingTicket: nil, note: "Test") }
