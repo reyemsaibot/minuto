@@ -162,7 +162,13 @@ struct EntryList: View {
         Table(rows) {
             TableColumn("Kunde / Projekt") { Text("\($0.customer)\n\($0.project)") }
             TableColumn("Jira-Ticket / Notiz") { Text("\($0.ticket)\n\($0.note ?? "")") }
-            TableColumn("Abrechnungsticket") { entry in Text(store.billingTicket(for: entry) ?? "–") }
+            TableColumn("Abrechnungsticket") { entry in
+                if store.hasMasterConflict(for: entry) {
+                    Label("Konflikt", systemImage: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                } else {
+                    Text(store.billingTicket(for: entry) ?? "–")
+                }
+            }
             TableColumn("Dauer") { Text(format($0.seconds)) }
             TableColumn("Status") { Text($0.billed ? "Archiv" : "Offen") }
             TableColumn("Aktionen") { row in

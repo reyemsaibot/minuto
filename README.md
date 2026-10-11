@@ -48,7 +48,8 @@ Der Timer basiert auf dem gespeicherten Startzeitpunkt und läuft auch bei gesch
 
 Unter **Stammdaten** werden Zuordnungen aus Kunde, Projekt und Abrechnungsticket hinterlegt.
 
-- Eine Kunde/Projekt-Kombination kann nur einmal gespeichert werden.
+- Eine Kunde/Projekt-Kombination kann nur einmal gespeichert werden und lässt sich direkt bearbeiten.
+- Historische Dubletten werden klar markiert. Beim Bereinigen wird das zu behaltende Abrechnungsticket ausgewählt und die Löschung der anderen Einträge bestätigt.
 - Aktive Zuordnungen werden während der Erfassung vorgeschlagen.
 - Ein Stern markiert häufig verwendete Zuordnungen als Favorit.
 - Archivierte Projekte können wieder aktiviert werden.
@@ -87,7 +88,7 @@ Wichtige Dateien:
 Über **Daten** stehen diese Funktionen bereit:
 
 - **Sicherung exportieren** erzeugt eine vollständige portable JSON-Sicherung.
-- **Einträge importieren und zusammenführen** übernimmt Zeiteinträge und fügt neue Stammdaten hinzu.
+- **Einträge importieren und zusammenführen** übernimmt Zeiteinträge und fügt neue Stammdaten hinzu. Widersprüchliche Abrechnungstickets für dieselbe Kunde/Projekt-Zuordnung brechen den Import ab.
 - **Einträge wiederherstellen** ersetzt den Zeitbestand; bei vollständigen Minuto-Sicherungen werden auch Stammdaten, Sollzeit und Wochenabschlüsse wiederhergestellt.
 - **Datenordner öffnen** öffnet den Speicherort im Finder.
 

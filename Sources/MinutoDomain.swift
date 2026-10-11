@@ -14,3 +14,54 @@ enum MinutoTimerPolicy {
 
     static func entryDate(for start: Date) -> Date { start }
 }
+
+struct MasterDataConflict: Identifiable, Hashable, Sendable {
+    let id: String
+    let customer: String
+    let project: String
+    let masters: [MasterData]
+}
+
+enum MasterDataRuleError: LocalizedError {
+    case conflictingBillingTicket(customer: String, project: String)
+    case unresolvedExistingConflicts
+
+    var errorDescription: String? {
+        switch self {
+        case let .conflictingBillingTicket(customer, project):
+            return "Für \(customer) · \(project) unterscheiden sich die Abrechnungstickets. Der Import wurde nicht übernommen."
+        case .unresolvedExistingConflicts:
+            return "Bitte bereinige vorhandene Stammdaten-Dubletten, bevor du weitere Stammdaten importierst."
+        }
+    }
+}
+
+enum MasterDataRules {
+    static func conflicts(in masters: [MasterData]) -> [MasterDataConflict] {
+        Dictionary(grouping: masters, by: \.normalizedKey).values
+            .filter { $0.count > 1 }
+            .compactMap { group in
+                guard let first = group.first else { return nil }
+                return MasterDataConflict(id: first.normalizedKey, customer: first.customer, project: first.project, masters: group)
+            }
+            .sorted { $0.customer.localizedCaseInsensitiveCompare($1.customer) == .orderedAscending }
+    }
+
+    static func merged(current: [MasterData], imported: [MasterData]) throws -> [MasterData] {
+        guard conflicts(in: current).isEmpty else { throw MasterDataRuleError.unresolvedExistingConflicts }
+        var result = current
+        for master in imported {
+            let matches = result.filter { $0.normalizedKey == master.normalizedKey }
+            if let existing = matches.first {
+                let sameTicket = existing.billingTicket.trimmingCharacters(in: .whitespacesAndNewlines)
+                    .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+                    == master.billingTicket.trimmingCharacters(in: .whitespacesAndNewlines)
+                    .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+                guard sameTicket else { throw MasterDataRuleError.conflictingBillingTicket(customer: master.customer, project: master.project) }
+            } else {
+                result.append(master)
+            }
+        }
+        return result
+    }
+}

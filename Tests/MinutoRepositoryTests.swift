@@ -8,6 +8,7 @@ import Foundation
             try await rejectDuplicateMastersDuringImport()
             try dateRangeUsesInclusiveCalendarDays()
             try timerRetainsItsStartDate()
+            try masterDataConflictsRequireAnExplicitResolution()
             print("Alle Minuto-Persistenztests bestanden.")
         } catch {
             FileHandle.standardError.write("TEST FEHLGESCHLAGEN: \(error)\n".data(using: .utf8)!)
@@ -76,6 +77,19 @@ import Foundation
         let nextDay = formatter.date(from: "2026-10-07T10:00:00Z")!
         try require(MinutoDateRange.contains(date, from: day, to: day, calendar: calendar), "Der Bis-Tag ist vollständig enthalten.")
         try require(!MinutoDateRange.contains(nextDay, from: day, to: day, calendar: calendar), "Der Folgetag ist ausgeschlossen.")
+    }
+
+    static func masterDataConflictsRequireAnExplicitResolution() throws {
+        let current = fixtureMaster()
+        let matching = MasterData(id: UUID(), customer: current.customer.lowercased(), project: current.project, billingTicket: current.billingTicket)
+        let conflicting = MasterData(id: UUID(), customer: current.customer, project: current.project, billingTicket: "ABR-NEU")
+        try require(MasterDataRules.conflicts(in: [current, conflicting]).count == 1, "Historische Stammdaten-Dubletten werden erkannt.")
+        let merged = try MasterDataRules.merged(current: [current], imported: [matching])
+        try require(merged.count == 1, "Gleiche Abrechnungstickets werden beim Import nicht dupliziert.")
+        do {
+            _ = try MasterDataRules.merged(current: [current], imported: [conflicting])
+            throw TestFailure("Widersprüchliche Abrechnungstickets wurden beim Import akzeptiert.")
+        } catch is MasterDataRuleError { }
     }
 
     static func timerRetainsItsStartDate() throws {

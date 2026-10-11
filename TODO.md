@@ -5,7 +5,6 @@ Diese Liste enthält bewusst verschobene Themen. Der aktuelle native Kernablauf 
 ## Nächste Ausbaustufe
 
 - [ ] Importvorschau mit Anzahl neuer, aktualisierter und kollidierender Einträge.
-- [ ] Bearbeiten bestehender Stammdaten direkt in der Liste.
 - [ ] Entscheidung, ob Timer über Mitternacht automatisch in Tagesbuchungen aufgeteilt werden sollen.
 - [ ] Sichtbare UI-Abnahme des finalen Bundles: Dock, Finder, `⌘Tab`, Fenstergrößen und Interaktionen.
 
