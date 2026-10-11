@@ -10,6 +10,7 @@ struct TimeEntryForm: View {
     @State private var note = ""
     @State private var minutes = 60.0
     @State private var date = Date()
+    @State private var showValidation = false
     @FocusState private var focusedField: EntryField?
 
     private enum EntryField: Hashable { case customer, project, ticket, note }
@@ -27,13 +28,46 @@ struct TimeEntryForm: View {
                 else { GridRow { TextField("Notiz (optional)", text: $note).focused($focusedField, equals: .note); Button("Timer starten") { start() }.buttonStyle(.borderedProminent); EmptyView() } }
             }
             if manual { TextField("Notiz (optional)", text: $note).focused($focusedField, equals: .note); HStack { Spacer(); Button("Zeit speichern") { save() }.buttonStyle(.borderedProminent) } }
+            if showValidation, !missingFields.isEmpty {
+                Label("Bitte ergänzen: \(missingFields.joined(separator: ", "))", systemImage: "exclamationmark.circle")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                    .accessibilityLabel("Fehlende Pflichtfelder: \(missingFields.joined(separator: ", "))")
+            }
             MasterDataPicker { master in customer = master.customer; project = master.project }
         }.padding(4) } label: { Text("Zeiten erfassen").font(.headline) }
         .task(id: showManualEntry) { consumeManualEntryRequest() }
     }
-    private func start() { guard !customer.isEmpty, !project.isEmpty, !ticket.isEmpty, store.activeTimer == nil else { return }; store.add(TimeEntry(id: UUID(), customer: customer, project: project, ticket: ticket, date: Date(), seconds: 0, startedAt: Date(), billed: false, billingTicket: nil, note: note.nilIfEmpty)); reset() }
-    private func save() { guard !customer.isEmpty, !project.isEmpty, !ticket.isEmpty, minutes > 0 else { return }; store.add(TimeEntry(id: UUID(), customer: customer, project: project, ticket: ticket, date: date, seconds: Int(minutes * 60), startedAt: nil, billed: false, billingTicket: nil, note: note.nilIfEmpty)); reset() }
-    private func reset() { customer = ""; project = ""; ticket = ""; note = ""; minutes = 60; date = Date() }
+    private var missingFields: [String] {
+        var fields: [String] = []
+        if customer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { fields.append("Kunde") }
+        if project.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { fields.append("Projekt") }
+        if ticket.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { fields.append("Jira-Ticket") }
+        if manual && minutes <= 0 { fields.append("Dauer") }
+        return fields
+    }
+    private func start() {
+        guard validateRequiredFields(), store.activeTimer == nil else { return }
+        store.add(TimeEntry(id: UUID(), customer: customer, project: project, ticket: ticket, date: Date(), seconds: 0, startedAt: Date(), billed: false, billingTicket: nil, note: note.nilIfEmpty))
+        reset()
+    }
+    private func save() {
+        guard validateRequiredFields() else { return }
+        store.add(TimeEntry(id: UUID(), customer: customer, project: project, ticket: ticket, date: date, seconds: Int(minutes * 60), startedAt: nil, billed: false, billingTicket: nil, note: note.nilIfEmpty))
+        reset()
+    }
+    private func validateRequiredFields() -> Bool {
+        guard missingFields.isEmpty else {
+            showValidation = true
+            if customer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { focusedField = .customer }
+            else if project.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { focusedField = .project }
+            else if ticket.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { focusedField = .ticket }
+            return false
+        }
+        showValidation = false
+        return true
+    }
+    private func reset() { customer = ""; project = ""; ticket = ""; note = ""; minutes = 60; date = Date(); showValidation = false }
     private func consumeManualEntryRequest() { guard showManualEntry else { return }; manual = true; date = Date(); showManualEntry = false; DispatchQueue.main.async { focusedField = .customer } }
 }
 
@@ -96,7 +130,13 @@ struct EntryList: View {
         }
     }
     var body: some View { GroupBox("Zeiteinträge") { VStack(alignment: .leading, spacing: 10) {
-        HStack { TextField("Kunde filtern", text: $customer); TextField("Jira-Ticket", text: $ticket); TextField("Notiz", text: $note); DatePicker("Von", selection: $from, displayedComponents: .date); DatePicker("Bis", selection: $to, displayedComponents: .date) }
+        HStack {
+            ClearableSearchField("Kunde filtern", text: $customer)
+            ClearableSearchField("Jira-Ticket", text: $ticket)
+            ClearableSearchField("Notiz", text: $note)
+            DatePicker("Von", selection: $from, displayedComponents: .date)
+            DatePicker("Bis", selection: $to, displayedComponents: .date)
+        }
         HStack(spacing: 0) {
             HStack(spacing: 12) {
                 filterLabel("Zeitraum")
@@ -145,7 +185,7 @@ struct EntryList: View {
     }
     private func duplicate(_ e: TimeEntry) { store.add(TimeEntry(id: UUID(), customer: e.customer, project: e.project, ticket: e.ticket, date: Date(), seconds: e.seconds, startedAt: nil, billed: false, billingTicket: nil, note: e.note)) }
     @ViewBuilder private func filterLabel(_ text: String) -> some View {
-        Text(text).foregroundStyle(.secondary).frame(width: 88, alignment: .trailing)
+        Text(text).foregroundStyle(.secondary)
     }
     private enum QuickRange { case today, week, lastThirtyDays, all }
     private func applyQuickRange(_ range: QuickRange) {
@@ -160,6 +200,36 @@ struct EntryList: View {
         case .lastThirtyDays: from = calendar.date(byAdding: .day, value: -29, to: today) ?? today; to = today
         case .all: from = store.entries.map(\.date).min() ?? today; to = store.entries.map(\.date).max() ?? today
         }
+    }
+}
+
+struct ClearableSearchField: View {
+    let placeholder: String
+    @Binding var text: String
+
+    init(_ placeholder: String, text: Binding<String>) {
+        self.placeholder = placeholder
+        _text = text
+    }
+
+    var body: some View {
+        HStack(spacing: 6) {
+            TextField(placeholder, text: $text)
+                .textFieldStyle(.plain)
+            if !text.isEmpty {
+                Button { text = "" } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.tertiary)
+                }
+                .buttonStyle(.plain)
+                .help("\(placeholder) löschen")
+                .accessibilityLabel("\(placeholder) löschen")
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(.background, in: RoundedRectangle(cornerRadius: 8))
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(.quaternary, lineWidth: 1))
     }
 }
 
