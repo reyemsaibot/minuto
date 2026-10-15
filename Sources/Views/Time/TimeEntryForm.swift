@@ -1,3 +1,4 @@
+import Combine
 import SwiftUI
 
 struct TimeEntryForm: View {
@@ -9,7 +10,9 @@ struct TimeEntryForm: View {
     @State private var ticket = ""
     @State private var note = ""
     @State private var minutes = 60.0
-    @State private var date = Date()
+    @State private var date = MinutoManualEntryDatePolicy.defaultDate()
+    @State private var dateWasChosenByUser = false
+    @State private var wasManual = false
     @State private var showValidation = false
     @FocusState private var focusedField: EntryField?
 
@@ -35,6 +38,15 @@ struct TimeEntryForm: View {
         }
         .task(id: showManualEntry) {
             consumeManualEntryRequest()
+        }
+        .onReceive(Just(manual)) { isManual in
+            defer { wasManual = isManual }
+            guard isManual, !wasManual, MinutoManualEntryDatePolicy.shouldRefreshDefaultDate(dateWasChosenByUser: dateWasChosenByUser) else { return }
+            date = MinutoManualEntryDatePolicy.defaultDate()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged)) { _ in
+            guard manual, MinutoManualEntryDatePolicy.shouldRefreshDefaultDate(dateWasChosenByUser: dateWasChosenByUser) else { return }
+            date = MinutoManualEntryDatePolicy.defaultDate()
         }
     }
 
@@ -68,8 +80,8 @@ struct TimeEntryForm: View {
                 GridRow {
                     dateField
                     TextField("Minuten", value: $minutes, format: .number)
-                    Button("Zeit speichern") { save() }
-                        .buttonStyle(.borderedProminent)
+                        .accessibilityLabel("Dauer in Minuten")
+                    EmptyView()
                 }
             } else {
                 GridRow {
@@ -103,7 +115,13 @@ struct TimeEntryForm: View {
             Text("Datum")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            DatePicker("Datum", selection: $date, displayedComponents: .date)
+            DatePicker("Datum", selection: Binding(
+                get: { date },
+                set: { selectedDate in
+                    date = selectedDate
+                    dateWasChosenByUser = true
+                }
+            ), displayedComponents: .date)
                 .labelsHidden()
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -149,15 +167,13 @@ struct TimeEntryForm: View {
     }
 
     private var suggestedMasters: [MasterData] {
-        let searchTerms = [customer, project]
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
-        guard !searchTerms.isEmpty else { return [] }
+        let customerTerm = customer.trimmingCharacters(in: .whitespacesAndNewlines)
+        let projectTerm = project.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !customerTerm.isEmpty || !projectTerm.isEmpty else { return [] }
 
         return store.activeMasters.filter { master in
-            searchTerms.allSatisfy { term in
-                master.customer.localizedCaseInsensitiveContains(term) || master.project.localizedCaseInsensitiveContains(term)
-            }
+            (customerTerm.isEmpty || master.customer.localizedCaseInsensitiveContains(customerTerm))
+                && (projectTerm.isEmpty || master.project.localizedCaseInsensitiveContains(projectTerm))
         }
         .prefix(5)
         .map { $0 }
@@ -224,18 +240,23 @@ struct TimeEntryForm: View {
         ticket = ""
         note = ""
         minutes = 60
-        date = Date()
+        resetManualDateToToday()
         showValidation = false
     }
 
     private func consumeManualEntryRequest() {
         guard showManualEntry else { return }
         manual = true
-        date = Date()
+        resetManualDateToToday()
         showManualEntry = false
         DispatchQueue.main.async {
             focusedField = .customer
         }
+    }
+
+    private func resetManualDateToToday() {
+        date = MinutoManualEntryDatePolicy.defaultDate()
+        dateWasChosenByUser = false
     }
 }
 

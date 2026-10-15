@@ -15,6 +15,18 @@ enum MinutoTimerPolicy {
     static func entryDate(for start: Date) -> Date { start }
 }
 
+enum MinutoManualEntryDatePolicy {
+    /// Eine neue manuelle Erfassung verwendet immer den Beginn des aktuellen lokalen Kalendertags.
+    static func defaultDate(now: Date = Date(), calendar: Calendar = .current) -> Date {
+        calendar.startOfDay(for: now)
+    }
+
+    /// Ein vom Nutzer gewähltes Buchungsdatum bleibt auch beim Tageswechsel unverändert.
+    static func shouldRefreshDefaultDate(dateWasChosenByUser: Bool) -> Bool {
+        !dateWasChosenByUser
+    }
+}
+
 struct MasterDataConflict: Identifiable, Hashable, Sendable {
     let id: String
     let customer: String

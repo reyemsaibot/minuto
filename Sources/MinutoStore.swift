@@ -5,16 +5,15 @@ import SwiftUI
     @Published var entries: [TimeEntry] = []
     @Published var masters: [MasterData] = []
     @Published var weekClosures: [WeekClosure] = []
-    @Published var dailyTarget = 8.0 {
-        didSet {
-            if !isLoading { persist() }
-        }
-    }
+    @Published private(set) var dailyTarget = 8.0
     @Published var error: String?
     @Published private(set) var isLoading = true
+    @Published private(set) var saveState: SaveState = .saved
+    @Published var pendingImport: ImportPreview?
 
     let repository: MinutoRepository
     let dataFolder: URL
+    private var saveTask: Task<Void, Never>?
 
     init(folder: URL? = nil, legacyFolder: URL? = nil) {
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -48,12 +47,42 @@ import SwiftUI
     func persist() {
         guard !isLoading else { return }
         let snapshot = currentSnapshot()
-        Task {
-            do {
-                try await repository.save(snapshot)
-            } catch {
-                self.error = "Änderung konnte nicht gesichert werden: \(Self.userMessage(for: error))"
-            }
+        saveTask?.cancel()
+        saveState = .saving
+        saveTask = Task {
+            try? await Task.sleep(for: .milliseconds(250))
+            guard !Task.isCancelled else { return }
+            await save(snapshot, ignoresCancellation: false)
+        }
+    }
+
+    func flushPendingSave() async {
+        guard !isLoading else { return }
+        saveTask?.cancel()
+        if let saveTask { await saveTask.value }
+        await save(currentSnapshot(), ignoresCancellation: true)
+    }
+
+    func setDailyTarget(_ value: Double) {
+        let normalized = max(0, value)
+        guard dailyTarget != normalized else { return }
+        dailyTarget = normalized
+        persist()
+    }
+
+    func restoreDailyTarget(_ value: Double) {
+        dailyTarget = max(0, value)
+    }
+
+    private func save(_ snapshot: MinutoSnapshot, ignoresCancellation: Bool) async {
+        do {
+            try await repository.save(snapshot)
+            guard ignoresCancellation || !Task.isCancelled else { return }
+            saveState = .saved
+        } catch {
+            guard ignoresCancellation || !Task.isCancelled else { return }
+            saveState = .failed
+            self.error = "Änderung konnte nicht gesichert werden: \(Self.userMessage(for: error))"
         }
     }
 
@@ -65,6 +94,20 @@ import SwiftUI
 
     static func userMessage(for error: Error) -> String {
         (error as? LocalizedError)?.errorDescription ?? "Bitte prüfe die gewählte Sicherungsdatei und versuche es erneut."
+    }
+}
+
+enum SaveState: Equatable {
+    case saved
+    case saving
+    case failed
+
+    var title: String {
+        switch self {
+        case .saved: return "Gespeichert"
+        case .saving: return "Wird gesichert …"
+        case .failed: return "Speichern fehlgeschlagen"
+        }
     }
 }
 

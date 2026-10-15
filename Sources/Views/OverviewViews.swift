@@ -28,8 +28,14 @@ struct OverviewView: View {
                 Metric(title: "Woche", value: hours(weekEntries))
                 VStack(alignment: .leading) {
                     Text("Sollzeit pro Tag")
-                    TextField("Stunden", value: $store.dailyTarget, format: .number)
-                        .frame(width: 80)
+                    Stepper(
+                        value: Binding(get: { store.dailyTarget }, set: { store.setDailyTarget($0) }),
+                        in: 0...24,
+                        step: 0.25
+                    ) {
+                        Text(store.dailyTarget.formatted(.number.precision(.fractionLength(0...2))) + " h")
+                    }
+                    .accessibilityLabel("Sollzeit pro Tag")
                 }
             }
             .padding(4)

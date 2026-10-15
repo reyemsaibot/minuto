@@ -11,7 +11,7 @@ Minuto ist eine lokale, native Zeiterfassung für macOS. Sie ordnet Zeiten Kunde
 - Einträge bearbeiten, duplizieren, abschließen, wieder öffnen und löschen
 - Filter für Kunde, Jira-Ticket, Notiz, Status und lokalen Datumsbereich
 - CSV-Export der aktuell gefilterten Einträge
-- Versionierte JSON-Sicherungen, Import und Wiederherstellung
+- Versionierte JSON-Sicherungen mit Vorschau vor Import und Wiederherstellung
 - Automatische Sicherung vor jeder gespeicherten Änderung, Aufbewahrung der letzten 30 Sicherungen
 - Tages- und Wochenübersicht, Sollzeit, Kalender, Kennzahlen und persistenter Wochenabschluss
 - Native SwiftUI-Oberfläche ohne Web- oder JavaScript-Runtime
@@ -89,8 +89,8 @@ Wichtige Dateien:
 Über **Daten** stehen diese Funktionen bereit:
 
 - **Sicherung exportieren** erzeugt eine vollständige portable JSON-Sicherung.
-- **Einträge importieren und zusammenführen** übernimmt Zeiteinträge und fügt neue Stammdaten hinzu. Widersprüchliche Abrechnungstickets für dieselbe Kunde/Projekt-Zuordnung brechen den Import ab.
-- **Einträge wiederherstellen** ersetzt den Zeitbestand; bei vollständigen Minuto-Sicherungen werden auch Stammdaten, Sollzeit und Wochenabschlüsse wiederhergestellt.
+- **Einträge importieren und zusammenführen** zeigt vor der Übernahme neue und aktualisierte Einträge sowie neue Stammdaten. Widersprüchliche Abrechnungstickets für dieselbe Kunde/Projekt-Zuordnung brechen den Import vor der Bestätigung ab.
+- **Einträge wiederherstellen** zeigt vor dem Ersetzen die betroffenen Einträge. Bei vollständigen Minuto-Sicherungen werden auch Stammdaten, Sollzeit und Wochenabschlüsse wiederhergestellt; bei älteren Eintrags-Exporten bleiben diese Daten unverändert.
 - **Datenordner öffnen** öffnet den Speicherort im Finder.
 
 Importdateien werden vor der Übernahme vollständig gelesen und validiert. Vor der resultierenden Änderung legt Minuto eine automatische Sicherung des bisherigen Gesamtbestands an.
@@ -110,7 +110,7 @@ Importdateien werden vor der Übernahme vollständig gelesen und validiert. Vor 
 ./build.sh
 ```
 
-`test.sh` prüft Migration, Sicherungen, doppelte Stammdaten und Datumsgrenzen. `build.sh` erzeugt `build/Minuto.app`, bindet Icon und Metadaten ein und signiert lokal ad hoc. Der GitHub-Workflow führt Tests, Build, Plist- und Signaturprüfung bei Pushes und Pull Requests aus.
+`test.sh` prüft Migration, Sicherungen, doppelte Stammdaten, Sollzeitgrenzen und Datumsgrenzen. `build.sh` erzeugt `build/Minuto.app`, bindet Icon und Metadaten ein und signiert lokal ad hoc. Der GitHub-Workflow führt Tests, Build, Plist- und Signaturprüfung bei Pushes und Pull Requests aus.
 
 ## Projektstruktur
 

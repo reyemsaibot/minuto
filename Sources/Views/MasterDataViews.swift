@@ -7,6 +7,7 @@ struct MasterDataView: View {
     @State private var billingTicket = ""
     @State private var editing: MasterData?
     @State private var resolution: MasterDataResolution?
+    @State private var masterPendingDeletion: MasterData?
 
     var body: some View {
         GroupBox("Kunde · Projekt · Abrechnungsticket") {
@@ -31,7 +32,7 @@ struct MasterDataView: View {
                     Text("Noch keine Stammdaten hinterlegt.").foregroundStyle(.secondary).padding(.vertical, 10)
                 }
                 ForEach(store.masters) { master in
-                    MasterDataRow(master: master) { editing = master }
+                    MasterDataRow(master: master, edit: { editing = master }, delete: { masterPendingDeletion = master })
                 }
             }
             .padding(6)
@@ -47,6 +48,21 @@ struct MasterDataView: View {
             }
         } message: {
             if let resolution { Text("Für \(resolution.conflict.customer) · \(resolution.conflict.project) bleibt nur das ausgewählte Abrechnungsticket erhalten. Die anderen \(resolution.conflict.masters.count - 1) Stammdaten werden gelöscht. Eine automatische Sicherung wird vorher erstellt.") }
+        }
+        .confirmationDialog(
+            "Stammdaten löschen?",
+            isPresented: Binding(get: { masterPendingDeletion != nil }, set: { if !$0 { masterPendingDeletion = nil } }),
+            titleVisibility: .visible
+        ) {
+            Button("Endgültig löschen", role: .destructive) {
+                if let masterPendingDeletion { store.deleteMaster(masterPendingDeletion) }
+                masterPendingDeletion = nil
+            }
+            Button("Abbrechen", role: .cancel) { masterPendingDeletion = nil }
+        } message: {
+            if let masterPendingDeletion {
+                Text("\(masterPendingDeletion.customer) · \(masterPendingDeletion.project) wird aus den Stammdaten gelöscht. Bestehende Zeiteinträge bleiben erhalten.")
+            }
         }
     }
 }
@@ -87,6 +103,7 @@ private struct MasterDataRow: View {
     @EnvironmentObject private var store: MinutoStore
     let master: MasterData
     let edit: () -> Void
+    let delete: () -> Void
 
     var body: some View {
         HStack {
@@ -94,10 +111,16 @@ private struct MasterDataRow: View {
             Text(master.project).frame(width: 180, alignment: .leading)
             Text(master.billingTicket)
             Spacer()
-            Button(master.favorite ? "★" : "☆") { var value = master; value.favorite.toggle(); store.updateMaster(value) }.help("Favorit")
+            Button(master.favorite ? "★" : "☆") { var value = master; value.favorite.toggle(); store.updateMaster(value) }
+                .help("Favorit")
+                .accessibilityLabel(master.favorite ? "Favorit entfernen" : "Als Favorit markieren")
             Button(master.active ? "Archivieren" : "Aktivieren") { var value = master; value.active.toggle(); store.updateMaster(value) }
-            Button { edit() } label: { Image(systemName: "pencil") }.help("Stammdaten bearbeiten")
-            Button(role: .destructive) { store.deleteMaster(master) } label: { Image(systemName: "trash") }.help("Löschen")
+            Button { edit() } label: { Image(systemName: "pencil") }
+                .help("Stammdaten bearbeiten")
+                .accessibilityLabel("Stammdaten bearbeiten")
+            Button(role: .destructive, action: delete) { Image(systemName: "trash") }
+                .help("Löschen")
+                .accessibilityLabel("Stammdaten löschen")
         }
     }
 }

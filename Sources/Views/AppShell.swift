@@ -1,9 +1,24 @@
 import AppKit
 import SwiftUI
 
+enum AppSection: Int, CaseIterable, Identifiable {
+    case time
+    case overview
+    case masterData
+
+    var id: Int { rawValue }
+    var title: String {
+        switch self {
+        case .time: return "Zeiten"
+        case .overview: return "Übersicht"
+        case .masterData: return "Stammdaten"
+        }
+    }
+}
+
 struct RootView: View {
     @EnvironmentObject private var store: MinutoStore
-    @State private var selection = 0
+    @State private var selection: AppSection = .time
     @State private var showManualEntry = false
     @State private var showHelp = false
 
@@ -19,11 +34,11 @@ struct RootView: View {
             content
         }
         .onReceive(NotificationCenter.default.publisher(for: .minutoStartManualEntry)) { _ in
-            selection = 0
+            selection = .time
             showManualEntry = true
         }
         .onReceive(NotificationCenter.default.publisher(for: .minutoSelectArea)) { notification in
-            if let area = notification.object as? Int {
+            if let area = notification.object as? AppSection {
                 selection = area
             }
         }
@@ -36,6 +51,20 @@ struct RootView: View {
             actions: { Button("OK") { store.error = nil } },
             message: { Text(store.error ?? "") }
         )
+        .confirmationDialog(
+            store.pendingImport?.title ?? "Daten importieren",
+            isPresented: Binding(get: { store.pendingImport != nil }, set: { if !$0 { store.cancelPendingImport() } }),
+            titleVisibility: .visible
+        ) {
+            if store.pendingImport?.replacesExistingData == true {
+                Button("Wiederherstellen", role: .destructive) { store.confirmPendingImport() }
+            } else {
+                Button("Importieren") { store.confirmPendingImport() }
+            }
+            Button("Abbrechen", role: .cancel) { store.cancelPendingImport() }
+        } message: {
+            Text(store.pendingImport?.summary ?? "")
+        }
     }
 
     private var applicationHeader: some View {
@@ -43,14 +72,15 @@ struct RootView: View {
             AppBrandView()
             Spacer()
             Picker("Bereich", selection: $selection) {
-                Text("Zeiten").tag(0)
-                Text("Übersicht").tag(1)
-                Text("Stammdaten").tag(2)
+                ForEach(AppSection.allCases) { area in
+                    Text(area.title).tag(area)
+                }
             }
             .pickerStyle(.segmented)
             .frame(width: 360)
             .accessibilityIdentifier("main-navigation")
             Spacer()
+            saveState
             dataMenu
             Button {
                 showHelp = true
@@ -64,6 +94,14 @@ struct RootView: View {
         .padding(.horizontal, 24)
         .padding(.vertical, 12)
         .background(.bar)
+    }
+
+    private var saveState: some View {
+        Text(store.saveState.title)
+            .font(.caption)
+            .foregroundStyle(store.saveState == .failed ? .red : .secondary)
+            .accessibilityLabel("Datenstatus: \(store.saveState.title)")
+            .frame(minWidth: 112, alignment: .trailing)
     }
 
     private var dataMenu: some View {
@@ -83,9 +121,9 @@ struct RootView: View {
             Spacer()
             ProgressView("Daten werden geladen …")
             Spacer()
-        } else if selection == 0 {
+        } else if selection == .time {
             TimeWorkspace(showManualEntry: $showManualEntry)
-        } else if selection == 1 {
+        } else if selection == .overview {
             OverviewView()
         } else {
             MasterDataWorkspace()

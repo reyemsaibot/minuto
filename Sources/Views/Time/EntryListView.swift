@@ -9,6 +9,7 @@ struct EntryList: View {
     @State private var from = Calendar.current.date(byAdding: .month, value: -1, to: Date())!
     @State private var to = Date()
     @State private var entryBeingEdited: TimeEntry?
+    @State private var entryPendingDeletion: TimeEntry?
 
     var body: some View {
         GroupBox("Zeiteinträge") {
@@ -23,6 +24,21 @@ struct EntryList: View {
         .sheet(item: $entryBeingEdited) { entry in
             TimeEntryEditor(entry: entry)
         }
+        .confirmationDialog(
+            "Zeiteintrag löschen?",
+            isPresented: Binding(get: { entryPendingDeletion != nil }, set: { if !$0 { entryPendingDeletion = nil } }),
+            titleVisibility: .visible
+        ) {
+            Button("Endgültig löschen", role: .destructive) {
+                if let entryPendingDeletion { store.delete(entryPendingDeletion) }
+                entryPendingDeletion = nil
+            }
+            Button("Abbrechen", role: .cancel) { entryPendingDeletion = nil }
+        } message: {
+            if let entryPendingDeletion {
+                Text("\(entryPendingDeletion.customer) · \(entryPendingDeletion.project) · \(format(entryPendingDeletion.seconds)) wird dauerhaft gelöscht.")
+            }
+        }
     }
 
     private var rows: [TimeEntry] {
@@ -36,13 +52,29 @@ struct EntryList: View {
     }
 
     private var searchFilters: some View {
-        HStack {
-            ClearableSearchField("Kunde filtern", text: $customer)
-            ClearableSearchField("Jira-Ticket", text: $ticket)
-            ClearableSearchField("Notiz", text: $note)
-            DatePicker("Von", selection: $from, displayedComponents: .date)
-            DatePicker("Bis", selection: $to, displayedComponents: .date)
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 14) { filterControls }
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 14) {
+                    ClearableSearchField("Kunde filtern", text: $customer)
+                    ClearableSearchField("Jira-Ticket", text: $ticket)
+                    ClearableSearchField("Notiz", text: $note)
+                }
+                HStack(spacing: 14) {
+                    DatePicker("Von", selection: $from, displayedComponents: .date)
+                    DatePicker("Bis", selection: $to, displayedComponents: .date)
+                }
+            }
         }
+    }
+
+    @ViewBuilder
+    private var filterControls: some View {
+        ClearableSearchField("Kunde filtern", text: $customer)
+        ClearableSearchField("Jira-Ticket", text: $ticket)
+        ClearableSearchField("Notiz", text: $note)
+        DatePicker("Von", selection: $from, displayedComponents: .date)
+        DatePicker("Bis", selection: $to, displayedComponents: .date)
     }
 
     private var quickFilters: some View {
@@ -91,26 +123,30 @@ struct EntryList: View {
     }
 
     private var entriesTable: some View {
-        Table(rows) {
-            TableColumn("Kunde / Projekt") {
-                Text("\($0.customer)\n\($0.project)")
-            }
-            TableColumn("Jira-Ticket / Notiz") {
-                Text("\($0.ticket)\n\($0.note ?? "")")
-            }
+        ScrollView(.horizontal) {
+            Table(rows) {
+                TableColumn("Kunde / Projekt") { entry in
+                    EntrySummaryCell(primary: entry.customer, secondary: entry.project)
+                        .frame(width: 240, alignment: .leading)
+                }
+                TableColumn("Jira-Ticket / Notiz") { entry in
+                    EntrySummaryCell(primary: entry.ticket, secondary: entry.note ?? "Keine Notiz")
+                        .frame(width: 290, alignment: .leading)
+                }
             TableColumn("Abrechnungsticket") { entry in
                 if store.hasMasterConflict(for: entry) {
                     Label("Konflikt", systemImage: "exclamationmark.triangle.fill")
                         .foregroundStyle(.orange)
                 } else {
                     Text(store.billingTicket(for: entry) ?? "–")
+                        .frame(width: 185, alignment: .leading)
                 }
             }
             TableColumn("Dauer") {
-                Text(format($0.seconds))
+                Text(format($0.seconds)).frame(width: 100, alignment: .leading)
             }
             TableColumn("Status") {
-                Text($0.billed ? "Archiv" : "Offen")
+                Text($0.billed ? "Archiv" : "Offen").frame(width: 90, alignment: .leading)
             }
             TableColumn("Aktionen") { row in
                 EntryActions(
@@ -119,11 +155,14 @@ struct EntryList: View {
                     edit: { entryBeingEdited = row },
                     close: { store.close(row) },
                     reopen: { store.reopen(row) },
-                    delete: { store.delete(row) }
+                    delete: { entryPendingDeletion = row }
                 )
+                .frame(width: 150, alignment: .leading)
             }
+            }
+            .frame(minWidth: 1_055, minHeight: 320)
         }
-        .frame(minHeight: 260)
+        .frame(maxWidth: .infinity, minHeight: 320)
     }
 
     private func duplicate(_ entry: TimeEntry) {
@@ -161,6 +200,24 @@ struct EntryList: View {
             from = store.entries.map(\.date).min() ?? today
             to = store.entries.map(\.date).max() ?? today
         }
+    }
+}
+
+private struct EntrySummaryCell: View {
+    let primary: String
+    let secondary: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(primary)
+            Text(secondary)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .fixedSize(horizontal: false, vertical: true)
+        .help("\(primary)\n\(secondary)")
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(primary), \(secondary)")
     }
 }
 
@@ -207,20 +264,25 @@ private struct EntryActions: View {
             if !row.billed {
                 Button(action: duplicate) { Image(systemName: "plus.square.on.square") }
                     .help("Duplizieren")
+                    .accessibilityLabel("Zeiteintrag duplizieren")
                 if row.startedAt == nil {
                     Button(action: edit) { Image(systemName: "pencil") }
                         .help("Bearbeiten")
+                        .accessibilityLabel("Zeiteintrag bearbeiten")
                 }
                 Button(action: close) { Image(systemName: "checkmark") }
                     .help("Abschließen")
+                    .accessibilityLabel("Zeiteintrag abschließen")
             } else {
                 Button(action: reopen) { Image(systemName: "arrow.counterclockwise") }
                     .help("Wieder öffnen")
+                    .accessibilityLabel("Zeiteintrag wieder öffnen")
             }
             Button(role: .destructive, action: delete) {
                 Image(systemName: "trash")
             }
             .help("Löschen")
+            .accessibilityLabel("Zeiteintrag löschen")
         }
         .labelStyle(.iconOnly)
     }

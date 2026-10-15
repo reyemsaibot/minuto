@@ -6,8 +6,10 @@ import Foundation
             try await migrationUsesMissingFilesFromLegacyFolder()
             try await backupsContainEveryDataKind()
             try await rejectDuplicateMastersDuringImport()
+            try await rejectNegativeDailyTarget()
             try dateRangeUsesInclusiveCalendarDays()
             try timerRetainsItsStartDate()
+            try manualEntryRefreshesItsDefaultDateAfterMidnight()
             try masterDataConflictsRequireAnExplicitResolution()
             print("Alle Minuto-Persistenztests bestanden.")
         } catch {
@@ -68,6 +70,16 @@ import Foundation
         } catch is MinutoPersistenceError { }
     }
 
+    static func rejectNegativeDailyTarget() async throws {
+        let root = try temporaryRoot()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let repository = MinutoRepository(folder: root.appendingPathComponent("Minuto"), legacyFolder: root.appendingPathComponent("Kundenzeit"))
+        do {
+            try await repository.save(MinutoSnapshot(dailyTarget: -0.25), createBackup: false)
+            throw TestFailure("Negative Sollzeit wurde akzeptiert.")
+        } catch is MinutoPersistenceError { }
+    }
+
     static func dateRangeUsesInclusiveCalendarDays() throws {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "Europe/Berlin")!
@@ -95,6 +107,16 @@ import Foundation
     static func timerRetainsItsStartDate() throws {
         let start = Date(timeIntervalSince1970: 1_760_000_000)
         try require(MinutoTimerPolicy.entryDate(for: start) == start, "Ein Timer bleibt dem Datum seines Starts zugeordnet.")
+    }
+
+    static func manualEntryRefreshesItsDefaultDateAfterMidnight() throws {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "Europe/Berlin")!
+        let formatter = ISO8601DateFormatter()
+        let afterMidnight = formatter.date(from: "2026-10-14T22:01:00Z")!
+        let expected = calendar.date(from: DateComponents(timeZone: calendar.timeZone, year: 2026, month: 10, day: 15))!
+        try require(MinutoManualEntryDatePolicy.defaultDate(now: afterMidnight, calendar: calendar) == expected, "Eine neue manuelle Erfassung erhält nach Mitternacht den aktuellen lokalen Kalendertag.")
+        try require(!MinutoManualEntryDatePolicy.shouldRefreshDefaultDate(dateWasChosenByUser: true), "Ein bewusst gewähltes Buchungsdatum bleibt erhalten.")
     }
 
     static func fixtureEntry() -> TimeEntry { TimeEntry(id: UUID(uuidString: "11111111-1111-1111-1111-111111111111")!, customer: "ENERCON", project: "UC44", ticket: "ITDS-1780", date: Date(timeIntervalSince1970: 1_760_000_000), seconds: 3600, startedAt: nil, billed: false, billingTicket: nil, note: "Test") }
