@@ -11,6 +11,7 @@ struct TimeEntryForm: View {
     @State private var note = ""
     @State private var minutes = 60.0
     @State private var date = MinutoManualEntryDatePolicy.defaultDate()
+    @State private var today = Date()
     @State private var dateWasChosenByUser = false
     @State private var wasManual = false
     @State private var showValidation = false
@@ -45,6 +46,7 @@ struct TimeEntryForm: View {
             date = MinutoManualEntryDatePolicy.defaultDate()
         }
         .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged)) { _ in
+            today = Date()
             guard manual, MinutoManualEntryDatePolicy.shouldRefreshDefaultDate(dateWasChosenByUser: dateWasChosenByUser) else { return }
             date = MinutoManualEntryDatePolicy.defaultDate()
         }
@@ -60,6 +62,11 @@ struct TimeEntryForm: View {
             .frame(width: 200)
 
             Spacer()
+
+            Label(today.formatted(.dateTime.weekday(.wide).day().month(.wide)), systemImage: "calendar")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .accessibilityLabel("Heute: \(today.formatted(.dateTime.weekday(.wide).day().month(.wide)))")
 
             if store.activeTimer != nil {
                 Label("Timer läuft", systemImage: "timer")
@@ -112,9 +119,12 @@ struct TimeEntryForm: View {
 
     private var dateField: some View {
         VStack(alignment: .leading, spacing: 5) {
-            Text("Datum")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            HStack(spacing: 6) {
+                Text("Datum")
+                Text(date.formatted(.dateTime.weekday(.wide)))
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
             DatePicker("Datum", selection: Binding(
                 get: { date },
                 set: { selectedDate in

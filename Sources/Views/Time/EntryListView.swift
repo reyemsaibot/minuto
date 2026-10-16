@@ -4,12 +4,14 @@ struct EntryList: View {
     @EnvironmentObject private var store: MinutoStore
     @State private var status = EntryStatus.open
     @State private var customer = ""
+    @State private var project = ""
     @State private var ticket = ""
     @State private var note = ""
     @State private var from = Calendar.current.date(byAdding: .month, value: -1, to: Date())!
     @State private var to = Date()
     @State private var entryBeingEdited: TimeEntry?
     @State private var entryPendingDeletion: TimeEntry?
+    @State private var selectedEntryIDs = Set<TimeEntry.ID>()
 
     var body: some View {
         GroupBox("Zeiteinträge") {
@@ -21,6 +23,7 @@ struct EntryList: View {
             }
             .padding(4)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .sheet(item: $entryBeingEdited) { entry in
             TimeEntryEditor(entry: entry)
         }
@@ -44,9 +47,10 @@ struct EntryList: View {
     private var rows: [TimeEntry] {
         store.entries.filter { entry in
             status.includes(entry)
-                && (customer.isEmpty || entry.customer.localizedCaseInsensitiveContains(customer))
-                && (ticket.isEmpty || entry.ticket.localizedCaseInsensitiveContains(ticket))
-                && (note.isEmpty || (entry.note ?? "").localizedCaseInsensitiveContains(note))
+                && MinutoTextFilter.matches(entry.customer, query: customer)
+                && MinutoTextFilter.matches(entry.project, query: project)
+                && MinutoTextFilter.matches(entry.ticket, query: ticket)
+                && MinutoTextFilter.matches(entry.note ?? "", query: note)
                 && MinutoDateRange.contains(entry.date, from: from, to: to)
         }
     }
@@ -57,6 +61,7 @@ struct EntryList: View {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 14) {
                     ClearableSearchField("Kunde filtern", text: $customer)
+                    ClearableSearchField("Projekt filtern", text: $project)
                     ClearableSearchField("Jira-Ticket", text: $ticket)
                     ClearableSearchField("Notiz", text: $note)
                 }
@@ -71,6 +76,7 @@ struct EntryList: View {
     @ViewBuilder
     private var filterControls: some View {
         ClearableSearchField("Kunde filtern", text: $customer)
+        ClearableSearchField("Projekt filtern", text: $project)
         ClearableSearchField("Jira-Ticket", text: $ticket)
         ClearableSearchField("Notiz", text: $note)
         DatePicker("Von", selection: $from, displayedComponents: .date)
@@ -115,6 +121,10 @@ struct EntryList: View {
         HStack {
             Text("\(rows.count) Einträge · \(hours(rows))")
                 .foregroundStyle(.secondary)
+            if !selectedRows.isEmpty {
+                Text("\(selectedRows.count) ausgewählt")
+                    .foregroundStyle(.secondary)
+            }
             Spacer()
             Button("CSV exportieren") {
                 store.exportCSV(rows)
@@ -124,7 +134,7 @@ struct EntryList: View {
 
     private var entriesTable: some View {
         ScrollView(.horizontal) {
-            Table(rows) {
+            Table(rows, selection: $selectedEntryIDs) {
                 TableColumn("Kunde / Projekt") { entry in
                     EntrySummaryCell(primary: entry.customer, secondary: entry.project)
                         .frame(width: 240, alignment: .leading)
@@ -133,36 +143,47 @@ struct EntryList: View {
                     EntrySummaryCell(primary: entry.ticket, secondary: entry.note ?? "Keine Notiz")
                         .frame(width: 290, alignment: .leading)
                 }
-            TableColumn("Abrechnungsticket") { entry in
-                if store.hasMasterConflict(for: entry) {
-                    Label("Konflikt", systemImage: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.orange)
-                } else {
-                    Text(store.billingTicket(for: entry) ?? "–")
-                        .frame(width: 185, alignment: .leading)
+                TableColumn("Datum") { entry in
+                    EntrySummaryCell(
+                        primary: entry.date.formatted(.dateTime.day().month(.twoDigits).year()),
+                        secondary: entry.date.formatted(.dateTime.weekday(.wide))
+                    )
+                    .frame(width: 125, alignment: .leading)
+                }
+                TableColumn("Abrechnungsticket") { entry in
+                    if store.hasMasterConflict(for: entry) {
+                        Label("Konflikt", systemImage: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                    } else {
+                        Text(store.billingTicket(for: entry) ?? "–")
+                            .frame(width: 185, alignment: .leading)
+                    }
+                }
+                TableColumn("Dauer") {
+                    Text(format($0.seconds)).frame(width: 100, alignment: .leading)
+                }
+                TableColumn("Status") {
+                    Text($0.billed ? "Archiv" : "Offen").frame(width: 90, alignment: .leading)
+                }
+                TableColumn("Aktionen") { row in
+                    EntryActions(
+                        row: row,
+                        duplicate: { duplicate(row) },
+                        edit: { entryBeingEdited = row },
+                        close: { store.close(row) },
+                        reopen: { store.reopen(row) },
+                        delete: { entryPendingDeletion = row }
+                    )
+                    .frame(width: 150, alignment: .leading)
                 }
             }
-            TableColumn("Dauer") {
-                Text(format($0.seconds)).frame(width: 100, alignment: .leading)
-            }
-            TableColumn("Status") {
-                Text($0.billed ? "Archiv" : "Offen").frame(width: 90, alignment: .leading)
-            }
-            TableColumn("Aktionen") { row in
-                EntryActions(
-                    row: row,
-                    duplicate: { duplicate(row) },
-                    edit: { entryBeingEdited = row },
-                    close: { store.close(row) },
-                    reopen: { store.reopen(row) },
-                    delete: { entryPendingDeletion = row }
-                )
-                .frame(width: 150, alignment: .leading)
-            }
-            }
-            .frame(minWidth: 1_055, minHeight: 320)
+            .frame(minWidth: 1_180, minHeight: 320, maxHeight: .infinity)
         }
-        .frame(maxWidth: .infinity, minHeight: 320)
+        .frame(maxWidth: .infinity, minHeight: 320, maxHeight: .infinity)
+    }
+
+    private var selectedRows: [TimeEntry] {
+        rows.filter { selectedEntryIDs.contains($0.id) }
     }
 
     private func duplicate(_ entry: TimeEntry) {

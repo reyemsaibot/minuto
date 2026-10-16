@@ -11,6 +11,7 @@ import Foundation
             try timerRetainsItsStartDate()
             try manualEntryRefreshesItsDefaultDateAfterMidnight()
             try masterDataConflictsRequireAnExplicitResolution()
+            try projectFilterMatchesCaseInsensitively()
             print("Alle Minuto-Persistenztests bestanden.")
         } catch {
             FileHandle.standardError.write("TEST FEHLGESCHLAGEN: \(error)\n".data(using: .utf8)!)
@@ -117,6 +118,12 @@ import Foundation
         let expected = calendar.date(from: DateComponents(timeZone: calendar.timeZone, year: 2026, month: 10, day: 15))!
         try require(MinutoManualEntryDatePolicy.defaultDate(now: afterMidnight, calendar: calendar) == expected, "Eine neue manuelle Erfassung erhält nach Mitternacht den aktuellen lokalen Kalendertag.")
         try require(!MinutoManualEntryDatePolicy.shouldRefreshDefaultDate(dateWasChosenByUser: true), "Ein bewusst gewähltes Buchungsdatum bleibt erhalten.")
+    }
+
+    static func projectFilterMatchesCaseInsensitively() throws {
+        try require(MinutoTextFilter.matches("BW Migration", query: "migration"), "Projektfilter findet Teiltexte ohne Beachtung der Groß- und Kleinschreibung.")
+        try require(!MinutoTextFilter.matches("BW Migration", query: "UC44"), "Projektfilter schließt nicht passende Projekte aus.")
+        try require(MinutoTextFilter.matches("BW Migration", query: ""), "Ein leerer Projektfilter lässt alle Projekte durch.")
     }
 
     static func fixtureEntry() -> TimeEntry { TimeEntry(id: UUID(uuidString: "11111111-1111-1111-1111-111111111111")!, customer: "ENERCON", project: "UC44", ticket: "ITDS-1780", date: Date(timeIntervalSince1970: 1_760_000_000), seconds: 3600, startedAt: nil, billed: false, billingTicket: nil, note: "Test") }

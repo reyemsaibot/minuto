@@ -8,6 +8,12 @@ enum MinutoDateRange {
     }
 }
 
+enum MinutoTextFilter {
+    static func matches(_ value: String, query: String) -> Bool {
+        query.isEmpty || value.localizedCaseInsensitiveContains(query)
+    }
+}
+
 enum MinutoTimerPolicy {
     /// Ein laufender Timer bleibt dem Kalendertag seines Starts zugeordnet.
     static let dateAssignment = "startDate"

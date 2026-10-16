@@ -185,13 +185,14 @@ struct TimeWorkspace: View {
     @Binding var showManualEntry: Bool
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                TimeEntryForm(showManualEntry: $showManualEntry)
-                EntryList()
-            }
-            .padding(24)
+        VStack(alignment: .leading, spacing: 18) {
+            TimeEntryForm(showManualEntry: $showManualEntry)
+                .fixedSize(horizontal: false, vertical: true)
+            EntryList()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        .padding(24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
